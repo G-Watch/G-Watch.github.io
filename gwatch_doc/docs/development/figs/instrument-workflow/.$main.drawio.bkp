@@ -1,0 +1,154 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.16 Chrome/132.0.6834.196 Electron/34.2.0 Safari/537.36" version="26.0.16">
+  <diagram name="Page-1" id="ZBZ1JPLH_43duIczs3rk">
+    <mxGraphModel dx="2226" dy="1143" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3310" pageHeight="4680" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-19" value="&lt;b&gt;Program&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;fontSize=18;align=center;verticalAlign=top;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="-1135" y="-127" width="316" height="179" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-40" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#CCCCCC;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-1108" y="-37" width="280" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-1" value="&lt;b&gt;Trace Task&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;fontSize=18;align=center;verticalAlign=top;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="-787" y="-127" width="295" height="301" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-4" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=3;" parent="1" vertex="1">
+          <mxGeometry x="-776" y="-91" width="278" height="259" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-3" value="kernel_name|" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-768" y="-86" width="247" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-10" value="enable_pc_sampling" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-768" y="31" width="246" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-12" value="TRUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;fontColor=#FFFFFF;fontStyle=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-632" y="34" width="41" height="13" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-17" value="" style="group" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="-768" y="-45" width="270" height="47" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-11" value="enable_coredump" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="YuXtbTvoN4vV0VhjkUbs-17" vertex="1">
+          <mxGeometry width="247" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-13" value="TRUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;fontColor=#FFFFFF;fontStyle=1;strokeColor=none;" parent="YuXtbTvoN4vV0VhjkUbs-17" vertex="1">
+          <mxGeometry x="114" y="3" width="41" height="13" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-14" value="- &lt;span style=&quot;font-weight: normal;&quot;&gt;breakpoint&lt;/span&gt;|" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="YuXtbTvoN4vV0VhjkUbs-17" vertex="1">
+          <mxGeometry x="20" y="21" width="221" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-15" value="" style="endArrow=none;html=1;rounded=0;strokeWidth=2;" parent="YuXtbTvoN4vV0VhjkUbs-17" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="22" y="42" as="sourcePoint" />
+            <mxPoint x="22" y="19" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-22" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: &amp;quot;Fira Code&amp;quot;; font-weight: 400; text-align: left;&quot;&gt;0x50&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="YuXtbTvoN4vV0VhjkUbs-17" vertex="1">
+          <mxGeometry x="117" y="21.5" width="33" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-29" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: &amp;quot;Fira Code&amp;quot;; font-weight: 400; text-align: left;&quot;&gt;0x1400&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="YuXtbTvoN4vV0VhjkUbs-17" vertex="1">
+          <mxGeometry x="152" y="21.5" width="46" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-20" value="&lt;div&gt;import &lt;font style=&quot;color: rgb(204, 0, 0);&quot;&gt;gwatch&lt;/font&gt; as &lt;b&gt;&lt;font style=&quot;color: rgb(204, 0, 0);&quot;&gt;gw&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;color: rgb(153, 153, 153);&quot;&gt;# initialize trace trace task&lt;/font&gt;&lt;/div&gt;&lt;b&gt;&lt;font style=&quot;color: rgb(204, 0, 0);&quot;&gt;trace_task&lt;/font&gt;&lt;/b&gt; = gw.trace_task(&quot;&lt;font style=&quot;color: rgb(51, 51, 255);&quot;&gt;./trace_config.yaml&lt;/font&gt;&quot;)&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;color: rgb(153, 153, 153);&quot;&gt;# run kernel&lt;/font&gt;&lt;/div&gt;&lt;div&gt;with &lt;font style=&quot;color: rgb(204, 0, 0);&quot;&gt;trace_task&lt;/font&gt;:&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp; &lt;b&gt;&lt;font style=&quot;color: rgb(204, 0, 0);&quot;&gt;o&lt;/font&gt;&lt;/b&gt; = model.forward(x)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=1;align=left;fillColor=none;spacingLeft=20;" parent="1" vertex="1">
+          <mxGeometry x="-1128" y="-87" width="300" height="131" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-21" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: &amp;quot;Fira Code&amp;quot;; font-weight: 400; text-align: left;&quot;&gt;sm80_xmma_gemm*&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="-678" y="-86" width="113" height="19" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-30" value="" style="endArrow=none;html=1;rounded=0;dashed=1;dashPattern=1 1;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-768" y="-51" as="sourcePoint" />
+            <mxPoint x="-505" y="-51" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-32" value="" style="endArrow=none;html=1;rounded=0;dashed=1;dashPattern=1 1;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-768" y="19" as="sourcePoint" />
+            <mxPoint x="-505" y="19" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-33" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;font face=&quot;Fira Code&quot;&gt;2. Profile&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="-769" y="10" width="78" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-35" value="" style="endArrow=none;html=1;rounded=0;dashed=1;dashPattern=1 1;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-768" y="94" as="sourcePoint" />
+            <mxPoint x="-505" y="94" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-36" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;font face=&quot;Fira Code&quot;&gt;3. Fine-grained Trace&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="-768" y="85" width="157" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-43" value="enable_tracing_counter" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-768" y="105" width="246" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-44" value="TRUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;fontColor=#FFFFFF;fontStyle=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-605" y="107" width="41" height="13" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-46" value="-&amp;nbsp;&lt;span style=&quot;font-weight: normal;&quot;&gt;counter&lt;/span&gt;|" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-748" y="125" width="221" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-47" value="" style="endArrow=none;html=1;rounded=0;strokeWidth=2;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-746" y="165" as="sourcePoint" />
+            <mxPoint x="-746" y="123" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-49" value="&lt;span style=&quot;color: rgb(0, 0, 0); font-family: &amp;quot;Fira Code&amp;quot;; font-weight: 400; text-align: left;&quot;&gt;dram__bytes_write.sum&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="-670" y="125.5" width="135" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-50" value="- &lt;span style=&quot;font-weight: normal;&quot;&gt;pc_range&lt;/span&gt;|" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-748" y="145" width="240" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-31" value="&lt;div style=&quot;text-align: left;&quot;&gt;&lt;font face=&quot;Fira Code&quot;&gt;1. Debug&lt;/font&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;fontColor=#FFFFFF;fontStyle=1;strokeColor=default;" parent="1" vertex="1">
+          <mxGeometry x="-767" y="-61" width="63" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;strokeWidth=2;" parent="1" source="YuXtbTvoN4vV0VhjkUbs-51" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-844" y="-35" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-51" value="Define trace task" style="text;html=1;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="-788.5" y="-162" width="140.5" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-54" value="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;fontColor=#FFFFFF;fontStyle=1;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-782" y="-155.5" width="17" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-55" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.acute_triangle;dx=0.67;rotation=-90;fillColor=#B3B3B3;opacity=50;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-955.5" y="3.5" width="297" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-56" value="+" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#4D9900;fontColor=#FFFFFF;strokeColor=none;fontStyle=1;spacingBottom=3;" parent="1" vertex="1">
+          <mxGeometry x="-1125" y="-79" width="15" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-57" value="+" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#4D9900;fontColor=#FFFFFF;strokeColor=none;fontStyle=1;spacingBottom=3;" parent="1" vertex="1">
+          <mxGeometry x="-1125" y="-35" width="15" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="YuXtbTvoN4vV0VhjkUbs-58" value="+" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#4D9900;fontColor=#FFFFFF;strokeColor=none;fontStyle=1;spacingBottom=3;" parent="1" vertex="1">
+          <mxGeometry x="-1125" y="9" width="15" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="BZSeEM-GrkOCjDJhSCkv-1" value="Trace with Runtime Params/Configs" style="text;html=1;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="-1055" y="107" width="244.5" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="BZSeEM-GrkOCjDJhSCkv-2" value="2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#000000;fontColor=#FFFFFF;fontStyle=1;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="-1073" y="113.5" width="17" height="17" as="geometry" />
+        </mxCell>
+        <mxCell id="BZSeEM-GrkOCjDJhSCkv-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;strokeWidth=2;exitX=0.472;exitY=0.058;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="BZSeEM-GrkOCjDJhSCkv-1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-978" y="28" as="targetPoint" />
+            <mxPoint x="-778" y="-137" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="-938" y="109" />
+              <mxPoint x="-938" y="28" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BZSeEM-GrkOCjDJhSCkv-4" value="enable_range_profiling" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" parent="1" vertex="1">
+          <mxGeometry x="-768" y="53" width="246" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="BZSeEM-GrkOCjDJhSCkv-5" value="TRUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;fontColor=#FFFFFF;fontStyle=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-601" y="55.5" width="41" height="13" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

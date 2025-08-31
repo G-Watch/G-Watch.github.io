@@ -1,0 +1,22 @@
+zobin:
+  name: Zobin
+  title: G-Watch Developer
+  url: https://linkedin.com/in/yangshun
+  image_url: https://pbs.twimg.com/profile_images/1962209880905068544/6XUKpGhc_400x400.jpg
+  page: true
+  socials:
+    x: https://x.com/HuangZobin
+    linkedin: https://www.linkedin.com/in/zhuobin-huang-a91522214/
+    github: zobinhuang
+    newsletter: https://zobinhuang.github.io
+
+
+jasper:
+  name: Jasper
+  title: G-Watch Developer
+  url: https://sg.linkedin.com/in/jaspertzx
+  image_url: https://github.com/jaspertzx.png
+  page: true
+  socials:
+    linkedin: https://sg.linkedin.com/in/jaspertzx
+    github: Jaspertzx

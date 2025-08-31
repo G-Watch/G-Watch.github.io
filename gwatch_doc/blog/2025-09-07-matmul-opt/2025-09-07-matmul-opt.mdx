@@ -1,0 +1,63 @@
+---
+slug: matmul-opt
+title: Road to fastest GEMM CUDA kernel on H100 GPU
+authors: [jasper,zobin]
+tags: [Performance,CUDA]
+---
+
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Label, Tooltip, ReferenceLine } from 'recharts';
+
+<AreaChart width={600} height={200} margin={{ top: 15, right: 30, left: 20, bottom: 15 }} data={
+    [
+        {name: 'Naive', flops: 400},
+        {name: 'Coalescing', flops: 600},
+        {name: 'SMEM Cache', flops: 900},
+        {name: '1D Blocktiling', flops: 1400},
+        {name: '2D Blocktiling', flops: 2400},
+        {name: 'Vectorized', flops: 2400},
+        {name: 'Autotuning', flops: 3000},
+        {name: 'Warptiling', flops: 4000},
+        {name: 'Double Buffering', flops: 5500},
+        {name: 'TMA', flops: 6400},
+    ]
+}>
+    <CartesianGrid stroke="#aaa" strokeDasharray="5 5" />
+    <Area
+        type="monotone"
+        stroke="#000000"
+        fill="#dd8f8fff"
+        strokeWidth={2}
+        dataKey="flops"
+    />
+    <XAxis
+        dataKey="name"
+        interval={0}
+        tickSize={10}
+        tick={{stroke: '#000000', fontSize: 12, strokeWidth: 1, angle: -25}}
+        type="category"
+    />
+    <YAxis
+        dataKey="flops"
+        tick={{stroke: '#000000', strokeWidth: 0.5, angle: 0}}
+        label={{ value: 'FLOPs', position: 'left', angle: -90 }}
+        domain={['dataMin', 9000]}
+    />
+    <ReferenceLine
+        y={8000}
+        isFront={true}
+        label={{ value: "H100 FP32 FLOPS Bound", stroke: '#000000' }} 
+        stroke="#ff0000ff"
+        strokeWidth={2}
+    />
+    <Label
+        value="Kernel FLOPs"
+        fontSize={40}
+        stroke="#000000"
+        zorder={1}
+        offset={20}
+        position="insideLeft"
+    />
+    <Tooltip />
+</AreaChart>
+
+<!-- truncate -->

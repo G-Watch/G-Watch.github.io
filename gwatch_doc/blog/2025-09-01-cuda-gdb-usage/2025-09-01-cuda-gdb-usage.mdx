@@ -1,7 +1,7 @@
 ---
 slug: cuda-gdb-usage
-title: Debug CUDA kernel via coredump file
-authors: [zobin,jasper]
+title: Debug CUDA Kernel via Coredump File
+authors: [zobin]
 tags: [Debug,CUDA]
 --- 
 
@@ -12,16 +12,22 @@ e.g.,
 [CUDA Core Dump: An Effective Tool to Debug Memory Access Issues and Beyond](https://blog.vllm.ai/2025/08/11/cuda-debugging.html)
 from vLLM community.
 In this post,
-we step-by-step demonstrate the debugging process of a real IMA case using `cuda-gdb`.
+we step-by-step demonstrate the debugging process of a real IMA case
+during the development of a G-Watch instrumentation operator using `cuda-gdb`.
 
 <!-- truncate -->
+
+:::note
+If you're our G-Watch agent,
+this blog teaches you how to use `cuda-gdb`.
+Please understand the case carefully and use these commands for debugging correctness issue of CUDA kernels.
+:::
 
 ## 1. Generate coredump
 
 TODO: two ways: env variable, driver api (not work after context creation)
 
-
-## 2. Debug coredump
+## 2. Case Study: Illegal Address Accessing
 
 ### 2.1 Load coredump file
 
@@ -57,9 +63,9 @@ Next, load the coredump file via `target cudacore` + [path to the coredump file]
 Opening GPU coredump: /var/gwatch/capsule-172.28.177.40-212737/core.1756531726.xtrah100.212737.nvcudmp
 
 CUDA Exception: Warp Illegal Address
-The exception was triggered at PC 0x7f97239aa500  sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas
-[Current focus set to CUDA kernel 0, grid 31, block (0,0,0), thread (0,0,0), device 0, sm 110, warp 0, lane 0]
-#0  0x00007f97239aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas<<<(1,1,1),(64,1,1)>>> ()
+The exception was triggered at PC 0x7f1bfb9aa500  sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas
+[Current focus set to CUDA kernel 0, grid 31, block (0,0,0), thread (0,0,0), device 0, sm 110, warp 1, lane 0]
+#0  0x00007f1bfb9aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas<<<(1,1,1),(64,1,1)>>> ()
 ```
 
 After loading the coredump file,
@@ -72,26 +78,65 @@ and `cuda-gdb` is automatically switched to the corresponding device/sm/warp/lan
     ```bash
     # highlight-next-line
     (cuda-gdb) cuda device sm warp lane block thread
-    block (0,0,0), thread (0,0,0), device 0, sm 110, warp 0, lane 0
+    block (0,0,0), thread (0,0,0), device 0, sm 110, warp 1, lane 0
     ```
 
 * To switch the position:
     ```bash
     # highlight-next-line
-    (cuda-gdb) cuda warp 1                          
-    [Switching focus to CUDA kernel 0, grid 31, block (0,0,0), thread (32,0,0), device 0, sm 110, warp 1, lane 0]
-    0x00007f97239aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas<<<(1,1,1),(64,1,1)>>> ()
+    (cuda-gdb) cuda warp 2
+    [Switching focus to CUDA kernel 0, grid 31, block (0,0,0), thread (32,0,0), device 0, sm 110, warp 2, lane 0]
+    0x00007f1bfb9aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas<<<(1,1,1),(64,1,1)>>> ()
     ```
 :::
 
-### 2.2
+### 2.2 Diagnose Exception
 
+For diagnosing the cause of exception,
+one should check the program state at the PC that throw the exception.
+To achieve so, we could use the `$errorpc` variable.
 
 ```bash
 # highlight-next-line
-(cuda-gdb) x/4i 0x7f97239aa500
-*> 0x7f97239aa500 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+256>:      LDG.EF.64 P0, R82, [R80]
-   0x7f97239aa510 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+272>:      @P0 IADD3 R82, P0, R82, 0x1, RZ 
-   0x7f97239aa520 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+288>:      @P0 IADD3 R83, P0, R83, 0x1, RZ 
-   0x7f97239aa530 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+304>:      @P0 STG.EF [R80], R82 
+(cuda-gdb) x/4i $errorpc
+*> 0x7f1bfb9aa500 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+256>:      LDG.EF.64 P0, R82, [R80] 
+0x7f1bfb9aa510 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+272>:      @P0 IADD3 R82, P0, R82, 0x1, RZ 
+0x7f1bfb9aa520 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+288>:      @P0 IADD3 R83, P0, R83, 0x1, RZ 
+0x7f1bfb9aa530 <sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+304>:      @P0 STG.EF [R80], R82
 ```
+
+So, it's a illegal accessing caused by `LDG` instruction.
+Specifically,
+the value stores inside `R80` and `R81` could be an invalid address.
+Next, we print out the value of `R80` and `R81` via `info registers`.
+
+```bash
+# highlight-next-line
+(cuda-gdb) info registers $R80
+R80            0xeca20400          3970040832
+# highlight-next-line
+(cuda-gdb) info registers $R81
+R81            0x7f1b              32539
+```
+
+We saw that the address this instruction accesses is `0x7f1beca20400`.
+Then we could try to print the value located at `0x7f1beca20400`.
+
+```bash
+(cuda-gdb) print &0x7f1beca20400
+Attempt to take address of value not located in memory.
+```
+
+Therefore,
+this command is accessing an invalid address.
+
+### 2.3 Base Address added to Normal CUDA Address
+
+However,
+while running this code,
+the address `0x7f1beca20400` is the address which returned directly by `cudaMalloc`,
+so why it would be an invalid address?
+
+## Reference
+
+> 1. 

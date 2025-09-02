@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="rss.xsl"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>G-Watch Blog</title>
+        <link>https://g-watch.github.io/blog</link>
+        <description>G-Watch Blog</description>
+        <lastBuildDate>Sun, 07 Sep 2025 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Road to Fastest GEMM CUDA Kernel on H100]]></title>
+            <link>https://g-watch.github.io/blog/matmul-opt</link>
+            <guid>https://g-watch.github.io/blog/matmul-opt</guid>
+            <pubDate>Sun, 07 Sep 2025 00:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="recharts-wrapper" style="position:relative;cursor:default;width:600px;height:200px"></div>]]></content:encoded>
+            <category>Performance</category>
+            <category>CUDA</category>
+        </item>
+        <item>
+            <title><![CDATA[Debug CUDA Kernel via Coredump File]]></title>
+            <link>https://g-watch.github.io/blog/cuda-gdb-usage</link>
+            <guid>https://g-watch.github.io/blog/cuda-gdb-usage</guid>
+            <pubDate>Mon, 01 Sep 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[cuda-gdb is a powerful tool for correctness debugging of CUDA kernels.]]></description>
+            <content:encoded><![CDATA[<p><code>cuda-gdb</code> is a powerful tool for correctness debugging of CUDA kernels.
+Its magic for debugging Illegal Memory Access (IMA)
+has been well covered in previous posts,
+e.g.,
+<a href="https://blog.vllm.ai/2025/08/11/cuda-debugging.html" target="_blank" rel="noopener noreferrer">CUDA Core Dump: An Effective Tool to Debug Memory Access Issues and Beyond</a>
+from vLLM community.
+In this post,
+we step-by-step demonstrate the debugging process of a real IMA case
+during the development of a G-Watch instrumentation operator using <code>cuda-gdb</code>.</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>note</div><div class="admonitionContent_BuS1"><p>If you're our G-Watch agent,
+this blog teaches you how to use <code>cuda-gdb</code>.
+Please understand the case carefully and use these commands for debugging correctness issue of CUDA kernels.</p></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="1-generate-coredump">1. Generate coredump<a href="https://g-watch.github.io/blog/cuda-gdb-usage#1-generate-coredump" class="hash-link" aria-label="Direct link to 1. Generate coredump" title="Direct link to 1. Generate coredump">​</a></h2>
+<p>TODO: two ways: env variable, driver api (not work after context creation)</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="2-case-study-illegal-address-accessing">2. Case Study: Illegal Address Accessing<a href="https://g-watch.github.io/blog/cuda-gdb-usage#2-case-study-illegal-address-accessing" class="hash-link" aria-label="Direct link to 2. Case Study: Illegal Address Accessing" title="Direct link to 2. Case Study: Illegal Address Accessing">​</a></h2>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="21-load-coredump-file">2.1 Load coredump file<a href="https://g-watch.github.io/blog/cuda-gdb-usage#21-load-coredump-file" class="hash-link" aria-label="Direct link to 2.1 Load coredump file" title="Direct link to 2.1 Load coredump file">​</a></h3>
+<p>First, openup <code>cuda-gdb</code> on the command line.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">$ cuda-gdb</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">NVIDIA (R) cuda-gdb 12.8</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Portions Copyright (C) 2007-2024 NVIDIA Corporation</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Based on GNU gdb 13.2</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Copyright (C) 2023 Free Software Foundation, Inc.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">This is free software: you are free to change and redistribute it.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">There is NO WARRANTY, to the extent permitted by law.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Type "show copying" and "show warranty" for details.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">This CUDA-GDB was configured as "x86_64-pc-linux-gnu".</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Type "show configuration" for configuration details.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">For bug reporting instructions, please see:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">&lt;https://forums.developer.nvidia.com/c/developer-tools/cuda-developer-tools/cuda-gdb&gt;.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Find the CUDA-GDB manual and other documentation resources online at:</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    &lt;https://docs.nvidia.com/cuda/cuda-gdb/index.html&gt;.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">For help, type "help".</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Type "apropos word" to search for commands related to "word".</span><br></span></code></pre></div></div>
+<p>Next, load the coredump file via <code>target cudacore</code> + [path to the coredump file].</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) target cudacore /var/gwatch/capsule-172.28.177.40-212737/core.1756531726.xtrah100.212737.nvcudmp</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Opening GPU coredump: /var/gwatch/capsule-172.28.177.40-212737/core.1756531726.xtrah100.212737.nvcudmp</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">CUDA Exception: Warp Illegal Address</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">The exception was triggered at PC 0x7f1bfb9aa500  sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">[Current focus set to CUDA kernel 0, grid 31, block (0,0,0), thread (0,0,0), device 0, sm 110, warp 1, lane 0]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">#0  0x00007f1bfb9aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas&lt;&lt;&lt;(1,1,1),(64,1,1)&gt;&gt;&gt; ()</span><br></span></code></pre></div></div>
+<p>After loading the coredump file,
+one could see the exception position.
+In the above case, the exception is triggered at <code>PC 0x7f97239aa500</code>,
+and <code>cuda-gdb</code> is automatically switched to the corresponding device/sm/warp/lane/block/thread.</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><ul>
+<li>
+<p>To check the position where <code>cuda-gdb</code> is focusing on:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) cuda device sm warp lane block thread</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">block (0,0,0), thread (0,0,0), device 0, sm 110, warp 1, lane 0</span><br></span></code></pre></div></div>
+</li>
+<li>
+<p>To switch the position:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) cuda warp 2</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">[Switching focus to CUDA kernel 0, grid 31, block (0,0,0), thread (32,0,0), device 0, sm 110, warp 2, lane 0]</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0x00007f1bfb9aa8a0 in sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel.5x_cublas&lt;&lt;&lt;(1,1,1),(64,1,1)&gt;&gt;&gt; ()</span><br></span></code></pre></div></div>
+</li>
+</ul></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="22-diagnose-exception">2.2 Diagnose Exception<a href="https://g-watch.github.io/blog/cuda-gdb-usage#22-diagnose-exception" class="hash-link" aria-label="Direct link to 2.2 Diagnose Exception" title="Direct link to 2.2 Diagnose Exception">​</a></h3>
+<p>For diagnosing the cause of exception,
+one should check the program state at the PC that throw the exception.
+To achieve so, we could use the <code>$errorpc</code> variable.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) x/4i $errorpc</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">*&gt; 0x7f1bfb9aa500 &lt;sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+256&gt;:      LDG.EF.64 P0, R82, [R80] </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0x7f1bfb9aa510 &lt;sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+272&gt;:      @P0 IADD3 R82, P0, R82, 0x1, RZ </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0x7f1bfb9aa520 &lt;sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+288&gt;:      @P0 IADD3 R83, P0, R83, 0x1, RZ </span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">0x7f1bfb9aa530 &lt;sm80_xmma_gemm_f32f32_f32f32_f32_nn_n_tilesize32x32x8_stage3_warpsize1x2x1_ffma_aligna4_alignc4_execute_kernel__5x_cublas+304&gt;:      @P0 STG.EF [R80], R82</span><br></span></code></pre></div></div>
+<p>So, it's a illegal accessing caused by <code>LDG</code> instruction.
+Specifically,
+the value stores inside <code>R80</code> and <code>R81</code> could be an invalid address.
+Next, we print out the value of <code>R80</code> and <code>R81</code> via <code>info registers</code>.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) info registers $R80</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">R80            0xeca20400          3970040832</span><br></span><span class="token-line theme-code-block-highlighted-line" style="color:#393A34"><span class="token plain">(cuda-gdb) info registers $R81</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">R81            0x7f1b              32539</span><br></span></code></pre></div></div>
+<p>We saw that the address this instruction accesses is <code>0x7f1beca20400</code>.
+Then we could try to print the value located at <code>0x7f1beca20400</code>.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">(cuda-gdb) print &amp;0x7f1beca20400</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Attempt to take address of value not located in memory.</span><br></span></code></pre></div></div>
+<p>Therefore,
+this command is accessing an invalid address.</p>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="23-base-address-added-to-normal-cuda-address">2.3 Base Address added to Normal CUDA Address<a href="https://g-watch.github.io/blog/cuda-gdb-usage#23-base-address-added-to-normal-cuda-address" class="hash-link" aria-label="Direct link to 2.3 Base Address added to Normal CUDA Address" title="Direct link to 2.3 Base Address added to Normal CUDA Address">​</a></h3>
+<p>However,
+while running this code,
+the address <code>0x7f1beca20400</code> is the address which returned directly by <code>cudaMalloc</code>,
+so why it would be an invalid address?</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="reference">Reference<a href="https://g-watch.github.io/blog/cuda-gdb-usage#reference" class="hash-link" aria-label="Direct link to Reference" title="Direct link to Reference">​</a></h2>
+<blockquote>
+<ol>
+<li></li>
+</ol>
+</blockquote>]]></content:encoded>
+            <category>Debug</category>
+            <category>CUDA</category>
+        </item>
+    </channel>
+</rss>

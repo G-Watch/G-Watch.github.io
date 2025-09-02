@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkgwatch_doc=self.webpackChunkgwatch_doc||[]).push([[8121],{8070:e=>{e.exports=JSON.parse('{"tags":[{"label":"Performance","permalink":"/blog/tags/performance","count":1},{"label":"CUDA","permalink":"/blog/tags/cuda","count":2},{"label":"Debug","permalink":"/blog/tags/debug","count":1}]}')}}]);

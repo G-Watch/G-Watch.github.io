@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { siteConfig, getSiteContent } from "@/lib/site-config";
 import { localePath, type Locale } from "@/lib/i18n";
+import { Brand } from "./brand";
 
 export function SiteFooter({ lang }: { lang: Locale }) {
   const content = getSiteContent(lang);
@@ -10,10 +11,7 @@ export function SiteFooter({ lang }: { lang: Locale }) {
     <footer className="mt-24 border-t border-line">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div>
-          <p className="font-serif text-lg font-bold text-ink">
-            {siteConfig.name}
-            <span className="text-accent">.</span>
-          </p>
+          <Brand size="sm" />
           <p className="mt-1 text-sm text-muted">{content.footerNote}</p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">

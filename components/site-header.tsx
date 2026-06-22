@@ -6,6 +6,7 @@ import { useState } from "react";
 import { siteConfig, getSiteContent } from "@/lib/site-config";
 import { localePath, type Locale } from "@/lib/i18n";
 import { LanguageSwitcher } from "./language-switcher";
+import { Brand } from "./brand";
 
 function isActive(pathname: string, href: string): boolean {
   const section = href.replace(/\/$/, "");
@@ -22,10 +23,10 @@ export function SiteHeader({ lang }: { lang: Locale }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
         <Link
           href={localePath(lang, "/")}
-          className="font-serif text-2xl font-bold tracking-tight text-ink"
+          aria-label={siteConfig.name}
+          className="inline-flex items-center"
         >
-          {siteConfig.name}
-          <span className="text-accent">.</span>
+          <Brand size="lg" />
         </Link>
 
         <nav className="hidden items-center gap-8 sm:flex">

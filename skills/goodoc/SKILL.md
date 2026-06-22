@@ -114,6 +114,7 @@ Everything is in `lib/site-config.ts`. Top-level (language-neutral) fields:
 
 ```ts
 name: "goodoc",                  // wordmark
+brand: { mode: "logo-and-name", logo: "/goodoc-mark.svg" },  // see below
 repo: "https://github.com/…",
 social: [{ label: "GitHub", href: "…" }],
 projectName: "goodoc",           // footer line ↓
@@ -122,6 +123,10 @@ poweredBy: { label: "Goodoc", href: "…" },
 ```
 
 The footer renders: `<projectName> <duration> | Powered by Goodoc`.
+
+**Logo** — `brand.mode` is `"logo-and-name"`, `"logo-only"`, or `"name-only"`;
+`brand.logo` is an image under `public/` (e.g. `/logo.svg`). The brand shows in
+the header and footer. A logo mode with no `logo` falls back to the name.
 
 Per-locale copy lives under `locales[lang]`:
 

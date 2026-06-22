@@ -1,0 +1,40 @@
+{
+  "$comment": "Declares which paths the goodoc framework owns vs. which belong to you. `npm run upgrade` overwrites the framework paths from upstream and never touches the user-owned paths. This manifest is itself framework-owned so the boundary can evolve across versions.",
+  "upstream": "https://github.com/zobinHuang/goodoc.git",
+  "branch": "main",
+  "framework": [
+    "app/layout.tsx",
+    "app/globals.css",
+    "app/page.tsx",
+    "app/not-found.tsx",
+    "app/[lang]",
+    "components",
+    "scripts",
+    "lib/content.ts",
+    "lib/markdown.ts",
+    "lib/paths.ts",
+    "lib/format.ts",
+    "lib/i18n.ts",
+    "lib/dictionaries.ts",
+    "next.config.ts",
+    "tsconfig.json",
+    "postcss.config.mjs",
+    "eslint.config.mjs",
+    ".github/workflows",
+    "dev-docs",
+    "skills/goodoc",
+    "UPGRADING.md",
+    "goodoc.manifest.json"
+  ],
+  "review": [
+    "package.json"
+  ],
+  "userOwned": [
+    "content",
+    "public",
+    "lib/site-config.ts",
+    "app/theme.css",
+    "README.md",
+    "LICENSE"
+  ]
+}

@@ -37,7 +37,10 @@ const die = (msg) => {
 };
 
 function git(cmd, opts = {}) {
-  return execSync(`git ${cmd}`, { cwd: root, encoding: "utf8", ...opts }).trim();
+  // execSync returns null when stdout isn't captured (e.g. stdio: "inherit"),
+  // so guard before trimming.
+  const out = execSync(`git ${cmd}`, { cwd: root, encoding: "utf8", ...opts });
+  return typeof out === "string" ? out.trim() : "";
 }
 // Treat a path as a literal pathspec so glob chars (e.g. the brackets in
 // "app/[lang]") match the real path instead of being interpreted as wildcards.

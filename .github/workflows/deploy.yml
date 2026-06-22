@@ -30,12 +30,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Compute base path
+        id: basepath
+        run: |
+          repo="${GITHUB_REPOSITORY##*/}"
+          repo_lc="$(printf '%s' "$repo" | tr '[:upper:]' '[:lower:]')"
+          # Project pages serve under /<repo>; user/org pages (<name>.github.io)
+          # and custom domains (a CNAME file) serve at the domain root.
+          if [[ "$repo_lc" == *.github.io || -f ./public/CNAME || -f ./CNAME ]]; then
+            echo "base_path=" >> "$GITHUB_OUTPUT"
+            echo "User/org page or custom domain → base path is empty (root)."
+          else
+            echo "base_path=/$repo" >> "$GITHUB_OUTPUT"
+            echo "Project page → base path is /$repo."
+          fi
+
       - name: Build static export
         run: npm run build
         env:
-          # Serve under the repo sub-path on a GitHub project page,
-          # e.g. https://<user>.github.io/<repo>/
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.basepath.outputs.base_path }}
 
       # Disable Jekyll so GitHub Pages serves the _next/ directory as-is.
       - name: Add .nojekyll

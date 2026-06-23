@@ -12,22 +12,33 @@ export interface NavLink {
   href: string;
 }
 
-export interface HeroMedia {
-  /** "image" (default) or "video". */
-  type?: "image" | "video";
-  /** Source under public/ (e.g. "/hero.png"). */
-  src: string;
-  /** Poster frame for videos. */
-  poster?: string;
-  /** Alt text. */
-  alt?: string;
-  /**
-   * Layout (read from the first item when an array is passed):
-   * "below" (default) — floating card beneath the hero text;
-   * "overlap" — same height band as the text, shifted to the side.
-   */
-  placement?: "below" | "overlap";
-}
+/**
+ * Hero showcase item. Either a media asset (image/video) or a custom React
+ * component registered in `lib/hero-slots.tsx`.
+ *
+ * `placement` (read from the first item when an array is passed):
+ * "below" (default) — floating card beneath the hero text;
+ * "overlap" — same height band as the text, shifted to the side.
+ */
+export type HeroMedia =
+  | {
+      /** "image" (default) or "video". */
+      type?: "image" | "video";
+      /** Source under public/ (e.g. "/hero.png"). */
+      src: string;
+      /** Poster frame for videos. */
+      poster?: string;
+      /** Alt text. */
+      alt?: string;
+      placement?: "below" | "overlap";
+    }
+  | {
+      /** A custom React component from lib/hero-slots.tsx. */
+      type: "custom";
+      /** Key into the heroSlots registry in lib/hero-slots.tsx. */
+      slot: string;
+      placement?: "below" | "overlap";
+    };
 
 export interface FeatureCard {
   title: string;

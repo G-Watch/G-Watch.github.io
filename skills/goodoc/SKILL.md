@@ -135,7 +135,8 @@ locales: {
   en: {
     tagline, description,
     hero: { eyebrow, headline, subhead,
-            primaryCta: { label, href }, secondaryCta: { label, href } },
+            primaryCta: { label, href }, secondaryCta: { label, href },
+            media: { type: "image", src: "/hero.png", alt: "…" } },  // optional
     features: [
       { title, body, image: "/features/landing.svg" },  // image optional
     ],
@@ -153,7 +154,29 @@ locales: {
 ```
 
 Add a feature illustration by dropping an SVG/PNG in `public/features/` and
-referencing it as `image`.
+referencing it as `image`. `hero.media` (optional) shows an image or video alongside the hero text. Pass
+a single item **or an array** — arrays crossfade automatically every 4 s.
+
+`placement` (read from the first item) controls layout:
+
+- `"below"` (default) — elegant floating card beneath the text; dot indicators
+  appear below the card when there are multiple slides.
+- `"overlap"` — same height band as the text, shifted to the side with a
+  radial-gradient feather mask; silent auto-advance (no visible controls).
+
+```ts
+// single item
+media: { type: "image", src: "/hero.png", alt: "…", placement: "overlap" }
+
+// crossfade carousel
+media: [
+  { type: "image", src: "/hero-1.png", alt: "Step 1", placement: "below" },
+  { type: "image", src: "/hero-2.png", alt: "Step 2" },
+  { type: "video", src: "/demo.mp4",   poster: "/demo-poster.png" },
+]
+```
+
+Put assets in `public/`. Videos play as muted, looping ambient clips.
 
 ## Task: change the theme (colors / fonts)
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { SiteShell } from "@/components/site-shell";
+import { HeroMedia } from "@/components/hero-media";
 import { getSiteContent } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/content";
 import { getDictionary } from "@/lib/dictionaries";
@@ -34,6 +35,8 @@ export default async function HomePage({
   const dict = getDictionary(lang);
   const { hero, features, quickstart } = content;
   const recentPosts = getAllBlogPosts(lang).slice(0, 3);
+  const firstMedia = Array.isArray(hero.media) ? hero.media[0] : hero.media;
+  const overlapMedia = firstMedia?.placement === "overlap";
 
   return (
     <SiteShell lang={lang}>
@@ -47,39 +50,89 @@ export default async function HomePage({
               "radial-gradient(60% 50% at 50% 0%, var(--color-accent-soft) 0%, transparent 70%)",
           }}
         />
-        <div className="mx-auto max-w-4xl px-5 pb-16 pt-20 text-center sm:px-8 sm:pt-28">
-          <p className="font-mono text-xs uppercase tracking-[0.25em] text-accent">
-            {hero.eyebrow}
-          </p>
-          <h1 className="mx-auto mt-6 max-w-3xl font-serif text-4xl font-bold leading-tight tracking-tight text-ink sm:text-6xl">
-            {hero.headline}
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
-            {hero.subhead}
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={localePath(lang, hero.primaryCta.href)}
-              className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-paper shadow-paper transition-colors hover:bg-accent-strong"
+        <div
+          className={`relative mx-auto px-5 sm:px-8 ${
+            overlapMedia ? "max-w-7xl" : "max-w-4xl"
+          }`}
+        >
+          <div
+            className={
+              overlapMedia
+                ? "grid items-center gap-8 py-16 sm:py-20 lg:grid-cols-2 lg:gap-6 lg:py-24"
+                : `pt-20 text-center sm:pt-28 ${hero.media ? "" : "pb-16"}`
+            }
+          >
+            <div
+              className={`relative z-10 min-w-0 ${
+                overlapMedia ? "text-center lg:text-left" : "text-center"
+              }`}
             >
-              {hero.primaryCta.label}
-            </Link>
-            <Link
-              href={localePath(lang, hero.secondaryCta.href)}
-              className="rounded-full border border-line bg-surface px-6 py-3 text-sm font-bold text-ink-soft transition-colors hover:border-accent hover:text-accent"
-            >
-              {hero.secondaryCta.label}
-            </Link>
+              <p className="font-mono text-xs uppercase tracking-[0.25em] text-accent">
+                {hero.eyebrow}
+              </p>
+              <h1
+                className={`mt-6 font-serif text-4xl font-bold leading-tight tracking-tight text-ink ${
+                  overlapMedia
+                    ? "mx-auto max-w-xl sm:text-5xl lg:mx-0"
+                    : "mx-auto max-w-3xl sm:text-6xl"
+                }`}
+              >
+                {hero.headline}
+              </h1>
+              <p
+                className={`mt-6 text-lg leading-relaxed text-ink-soft ${
+                  overlapMedia ? "mx-auto max-w-md lg:mx-0" : "mx-auto max-w-2xl"
+                }`}
+              >
+                {hero.subhead}
+              </p>
+              <div
+                className={`mt-9 flex flex-wrap items-center gap-3 ${
+                  overlapMedia ? "justify-center lg:justify-start" : "justify-center"
+                }`}
+              >
+                <Link
+                  href={localePath(lang, hero.primaryCta.href)}
+                  className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-paper shadow-paper transition-colors hover:bg-accent-strong"
+                >
+                  {hero.primaryCta.label}
+                </Link>
+                <Link
+                  href={localePath(lang, hero.secondaryCta.href)}
+                  className="rounded-full border border-line bg-surface px-6 py-3 text-sm font-bold text-ink-soft transition-colors hover:border-accent hover:text-accent"
+                >
+                  {hero.secondaryCta.label}
+                </Link>
+              </div>
+            </div>
+
+            {overlapMedia && hero.media && <HeroMedia media={hero.media} />}
           </div>
         </div>
+
+        {!overlapMedia && hero.media && (
+          <div className="px-5 pb-16 pt-16 sm:px-8">
+            <HeroMedia media={hero.media} />
+          </div>
+        )}
       </section>
 
       {/* Features (with optional illustration) */}
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {features.map((feature) => (
-            <div key={feature.title} className="flex flex-col bg-surface">
-              {feature.image && (
+            <div key={feature.title} className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface">
+              {feature.video ? (
+                <video
+                  src={withBasePath(feature.video)}
+                  poster={feature.poster ? withBasePath(feature.poster) : undefined}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-44 w-full border-b border-line object-cover"
+                />
+              ) : feature.image ? (
                 // Plain <img>: the static export has no next/image optimizer.
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -87,7 +140,7 @@ export default async function HomePage({
                   alt=""
                   className="h-44 w-full border-b border-line object-cover"
                 />
-              )}
+              ) : null}
               <div className="p-7">
                 <h3 className="font-serif text-xl font-bold text-ink">
                   {feature.title}

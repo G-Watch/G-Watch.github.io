@@ -2,28 +2,34 @@
 
 import { useState, useEffect } from "react";
 import type { HeroMedia as HeroMediaConfig } from "@/lib/site-config";
+import { heroSlots } from "@/lib/hero-slots";
 import { withBasePath } from "@/lib/paths";
 
 const FEATHER = "radial-gradient(78% 82% at 70% 50%, #000 40%, transparent 80%)";
 const INTERVAL_MS = 4000;
 
 function MediaItem({ media }: { media: HeroMediaConfig }) {
-  return media.type === "video" ? (
-    <video
-      className="block w-full"
-      src={withBasePath(media.src)}
-      poster={media.poster ? withBasePath(media.poster) : undefined}
-      autoPlay
-      loop
-      muted
-      playsInline
-      aria-label={media.alt}
-    />
-  ) : (
-    // Plain <img>: the static export has no next/image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img className="block w-full" src={withBasePath(media.src)} alt={media.alt ?? ""} />
-  );
+  if (media.type === "custom") {
+    // A user-defined component from lib/hero-slots.tsx.
+    return <>{heroSlots[media.slot] ?? null}</>;
+  }
+  if (media.type === "video") {
+    return (
+      <video
+        className="block w-full"
+        src={withBasePath(media.src)}
+        poster={media.poster ? withBasePath(media.poster) : undefined}
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-label={media.alt}
+      />
+    );
+  }
+  // Plain <img>: the static export has no next/image optimizer.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="block w-full" src={withBasePath(media.src)} alt={media.alt ?? ""} />;
 }
 
 /**

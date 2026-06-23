@@ -5,7 +5,7 @@ import { SiteShell } from "@/components/site-shell";
 import { Prose } from "@/components/prose";
 import { ViewSwitch } from "@/components/view-switch";
 import { getAllBlogPosts, getBlogPost } from "@/lib/content";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { formatDate } from "@/lib/format";
 import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
@@ -40,7 +40,7 @@ export default async function BlogPostPage({
   const post = getBlogPost(lang, resolved.slug);
   if (!post) notFound();
 
-  const { html } = await renderMarkdown(post.body, { lang });
+  const { html, content } = await renderContent(post, lang);
   const dict = getDictionary(lang);
 
   return (
@@ -71,7 +71,7 @@ export default async function BlogPostPage({
           </div>
         </header>
 
-        <Prose html={html} />
+        <Prose html={html}>{content}</Prose>
 
         <footer className="mt-16 border-t border-line pt-8 text-center">
           <Link

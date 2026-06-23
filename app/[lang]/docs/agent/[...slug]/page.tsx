@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AgentShell } from "@/components/agent-shell";
 import { getAllDocs, getDoc } from "@/lib/content";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, type Locale } from "@/lib/i18n";
 
@@ -36,7 +36,7 @@ export default async function DocAgentPage({
   const doc = getDoc(lang, resolved.slug);
   if (!doc) notFound();
 
-  const { html } = await renderMarkdown(doc.body, { lang });
+  const { html, content } = await renderContent(doc, lang);
 
   return (
     <AgentShell
@@ -44,8 +44,10 @@ export default async function DocAgentPage({
       collection="docs"
       slugPath={doc.slugPath}
       title={doc.title}
-      html={`<h1>${doc.title}</h1>\n${html}`}
+      html={html !== undefined ? `<h1>${doc.title}</h1>\n${html}` : undefined}
       strings={getDictionary(lang).agent}
-    />
+    >
+      {content}
+    </AgentShell>
   );
 }

@@ -25,8 +25,10 @@ export interface ContentItem extends ContentMeta {
   slug: string[];
   /** Joined slug, e.g. "guide/authoring". */
   slugPath: string;
-  /** Raw markdown body (frontmatter stripped). */
+  /** Raw body (frontmatter stripped) — Markdown for "md", MDX for "mdx". */
   body: string;
+  /** Source format: plain Markdown or MDX (allows custom components). */
+  format: "md" | "mdx";
 }
 
 const CONTENT_ROOT = path.join(process.cwd(), "content");
@@ -35,7 +37,10 @@ function collectionDir(lang: Locale, collection: Collection): string {
   return path.join(CONTENT_ROOT, lang, collection);
 }
 
-/** Recursively list every markdown file under a directory. */
+/** Matches the content file extensions: .md, .mdx, .markdown. */
+const CONTENT_EXT = /\.(mdx?|markdown)$/;
+
+/** Recursively list every Markdown/MDX file under a directory. */
 function walkMarkdown(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   const out: string[] = [];
@@ -43,7 +48,7 @@ function walkMarkdown(dir: string): string[] {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...walkMarkdown(full));
-    } else if (/\.m(d|arkdown)$/.test(entry.name)) {
+    } else if (CONTENT_EXT.test(entry.name)) {
       out.push(full);
     }
   }
@@ -56,7 +61,7 @@ function fileToItem(
   file: string,
 ): ContentItem {
   const rel = path.relative(baseDir, file);
-  const slug = rel.replace(/\.(md|markdown)$/, "").split(path.sep);
+  const slug = rel.replace(CONTENT_EXT, "").split(path.sep);
   const raw = fs.readFileSync(file, "utf8");
   const { data, content } = matter(raw);
   const meta = data as ContentMeta;
@@ -65,6 +70,7 @@ function fileToItem(
     slug,
     slugPath: slug.join("/"),
     body: content,
+    format: /\.mdx$/.test(file) ? "mdx" : "md",
     title: meta.title ?? slug[slug.length - 1],
     description: meta.description,
     date: meta.date ? String(meta.date) : undefined,

@@ -22,6 +22,17 @@ export interface RenderedMarkdown {
   toc: TocItem[];
 }
 
+/** Shared rehype-autolink-headings config — a "#" anchor appended to headings. */
+export const autolinkOptions = {
+  behavior: "append" as const,
+  properties: {
+    className: ["heading-anchor"],
+    ariaHidden: "true",
+    tabIndex: -1,
+  },
+  content: { type: "text" as const, value: "#" },
+};
+
 /** Concatenate the text content of a hast node. */
 function hastText(node: RootContent | Root): string {
   if (node.type === "text") return node.value;
@@ -31,8 +42,9 @@ function hastText(node: RootContent | Root): string {
   return "";
 }
 
-/** Collect h2/h3 headings (with ids from rehype-slug) into a table of contents. */
-function rehypeCollectToc(acc: TocItem[]) {
+/** Collect h2/h3 headings (with ids from rehype-slug) into a table of contents.
+ * Exported so the MDX pipeline (lib/mdx.tsx) can reuse the exact same logic. */
+export function rehypeCollectToc(acc: TocItem[]) {
   return (tree: Root) => {
     const walk = (node: Root | RootContent) => {
       if (
@@ -65,8 +77,10 @@ function rehypeCollectToc(acc: TocItem[]) {
  *   AND the locale prefix, so content authors can link locale-relative.
  *
  * next/link/next/image handle their own URLs; this only touches raw Markdown.
+ * Exported so the MDX pipeline (lib/mdx.tsx) can reuse it. Custom JSX elements
+ * are mdxJsxElement nodes (not `element`), so their props are left untouched.
  */
-function rehypeLinkRewrite(bp: string, lang: Locale) {
+export function rehypeLinkRewrite(bp: string, lang: Locale) {
   const rewrite = (url: string): string => {
     if (!url.startsWith("/") || url.startsWith("//")) return url;
     const lastSegment = url.split(/[?#]/)[0].split("/").pop() ?? "";
@@ -112,15 +126,7 @@ export async function renderMarkdown(
     .use(rehypeRaw)
     .use(rehypeSlug)
     .use(rehypeCollectToc, toc)
-    .use(rehypeAutolinkHeadings, {
-      behavior: "append",
-      properties: {
-        className: ["heading-anchor"],
-        ariaHidden: "true",
-        tabIndex: -1,
-      },
-      content: { type: "text", value: "#" },
-    })
+    .use(rehypeAutolinkHeadings, autolinkOptions)
     .use(rehypeShiki, { theme: "github-light" })
     .use(rehypeLinkRewrite, basePath, lang)
     .use(rehypeStringify)

@@ -16,7 +16,7 @@
  * written next to yours as `<file>.upstream` for you to diff and merge.
  */
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -66,6 +66,7 @@ const upstreamUrl = manifest.upstream;
 const branch = manifest.branch || "main";
 const frameworkPaths = manifest.framework ?? [];
 const reviewPaths = manifest.review ?? [];
+const seedPaths = manifest.seed ?? [];
 
 if (tryGit("rev-parse --is-inside-work-tree") !== "true") {
   die("Not a git repository. goodoc upgrades work over git.");
@@ -125,6 +126,25 @@ for (const p of frameworkPaths) {
   }
 }
 
+// --- Seed: bootstrap user-owned files that don't exist yet ----------------
+// These are user-owned (never overwritten), but newer framework versions may
+// start depending on one. We create it from upstream only when it's missing, so
+// downstream repos that predate the file still build after upgrading.
+const seeded = [];
+for (const p of seedPaths) {
+  if (existsSync(path.join(root, p))) continue; // keep your version, untouched
+  if (dryRun) {
+    if (tryGit(`cat-file -e ${ref}:${p}`) !== null) seeded.push(p);
+    continue;
+  }
+  try {
+    git(`checkout ${ref} -- ${pathspec(p)}`);
+    seeded.push(p);
+  } catch {
+    // Not present at that ref — nothing to seed.
+  }
+}
+
 // --- Review files: write upstream copy beside yours -----------------------
 for (const p of reviewPaths) {
   const upstreamContent = tryGit(`show ${ref}:${p}`);
@@ -139,10 +159,18 @@ if (dryRun) {
   log("\n(dry run) framework files that would change:");
   if (updated.length) [...new Set(updated)].forEach((f) => log(`    ${f}`));
   else log("    none — you are up to date");
+  if (seeded.length) {
+    log("\n(dry run) user-owned files that would be created (missing locally):");
+    seeded.forEach((f) => log(`    ${f}`));
+  }
   process.exit(0);
 }
 
 log("\n✓ framework files updated.");
+if (seeded.length) {
+  log("  • created new user-owned files (edit freely — yours from now on):");
+  seeded.forEach((f) => log(`      ${f}`));
+}
 if (failed.length) {
   log("  (skipped — not present at that ref, safe to ignore unless unexpected:)");
   failed.forEach((f) => log(`    ${f}`));

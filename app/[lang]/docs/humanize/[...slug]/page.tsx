@@ -7,7 +7,7 @@ import { TableOfContents } from "@/components/table-of-contents";
 import { Prose } from "@/components/prose";
 import { ViewSwitch } from "@/components/view-switch";
 import { getAllDocs, getDoc } from "@/lib/content";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
 
@@ -41,7 +41,7 @@ export default async function DocPage({
   const doc = getDoc(lang, resolved.slug);
   if (!doc) notFound();
 
-  const { html, toc } = await renderMarkdown(doc.body, { lang });
+  const { html, content, toc } = await renderContent(doc, lang);
   const dict = getDictionary(lang);
 
   const docs = getAllDocs(lang);
@@ -85,7 +85,7 @@ export default async function DocPage({
               )}
             </header>
 
-            <Prose html={html} />
+            <Prose html={html}>{content}</Prose>
 
             <nav className="mt-14 grid gap-4 border-t border-line pt-8 sm:grid-cols-2">
               {prev ? (

@@ -10,7 +10,9 @@
     "upgrade": "node scripts/upgrade.mjs"
   },
   "dependencies": {
+    "@mdx-js/mdx": "^3.1.1",
     "@shikijs/rehype": "^4.2.0",
+    "@types/mdx": "^2.0.14",
     "gray-matter": "^4.0.3",
     "next": "16.2.9",
     "react": "19.2.4",

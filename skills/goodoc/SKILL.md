@@ -31,13 +31,16 @@ default. Blog mirrors docs at `/<lang>/blog/{humanize,agent}/<slug>/`.
 
 1. **Only edit user-owned files.** Framework files are overwritten by
    `npm run upgrade`. Edit freely:
-   - `content/` — your docs and blog
+   - `content/` — your docs and blog (`.md` or `.mdx`)
    - `lib/site-config.ts` — project identity, landing copy, nav, footer
+   - `lib/hero-slots.tsx` — your custom hero showcase components
+   - `lib/mdx-components.tsx` — your components for use inside `.mdx` content
    - `app/theme.css` — palette and font tokens
    - `public/` — images and assets
    - `README*`
    Do **not** edit (framework-owned): `app/[lang]/`, `app/layout.tsx`,
-   `app/globals.css`, `components/`, `lib/{content,markdown,i18n,dictionaries,paths,format}.ts`,
+   `app/globals.css`, `components/`,
+   `lib/{content,markdown,mdx,render-content,i18n,dictionaries,paths,format}.ts(x)`,
    configs, `.github/workflows/`. The full boundary is in `goodoc.manifest.json`.
 2. **Write in-content links locale-relative**: `/docs/humanize/<slug>/`, not
    `/en/docs/…`. The current locale prefix and deploy base path are added at
@@ -50,9 +53,11 @@ default. Blog mirrors docs at `/<lang>/blog/{humanize,agent}/<slug>/`.
 ## Repo map
 
 ```text
-content/<locale>/docs/*.md     docs (sidebar)         ← author here
-content/<locale>/blog/*.md     blog posts             ← author here
+content/<locale>/docs/*.md|mdx docs (sidebar)        ← author here
+content/<locale>/blog/*.md|mdx blog posts            ← author here
 lib/site-config.ts             identity, hero, features, quickstart, nav, footer
+lib/hero-slots.tsx             custom hero showcase components   ← author here
+lib/mdx-components.tsx         components usable inside .mdx     ← author here
 app/theme.css                  colors + font variables
 public/                        images/assets (e.g. /features/*.svg)
 lib/i18n.ts                    locales, default, helpers   (framework)
@@ -65,8 +70,9 @@ dev-docs/                      deep framework docs
 
 ## Task: add or edit a documentation page
 
-Create `content/<locale>/docs/<slug>.md` (the default locale is `en`). Nested
-folders become nested slugs (`content/en/docs/guide/setup.md` →
+Create `content/<locale>/docs/<slug>.md` (the default locale is `en`; use
+`.mdx` instead if the page needs custom components — see the MDX task below).
+Nested folders become nested slugs (`content/en/docs/guide/setup.md` →
 `/en/docs/humanize/guide/setup/`).
 
 ```markdown
@@ -107,6 +113,41 @@ tags: [Announcement]
 
 Same Markdown + rendering as docs.
 ```
+
+## Task: embed custom components in content (MDX)
+
+Plain Markdown files (`.md`) cannot contain React components. To embed live
+components in a doc or post, name the file **`.mdx`** instead — everything
+Markdown does still works (GFM, Shiki, TOC, anchors, locale link-rewriting), and
+you additionally get JSX.
+
+1. Register the component in `lib/mdx-components.tsx` (user-owned; `npm run
+   upgrade` seeds it if missing, never overwrites it). It's then available in
+   **every** `.mdx` file with no per-file import:
+
+   ```tsx
+   // lib/mdx-components.tsx
+   import { Chart } from "@/components/chart";
+   export const mdxComponents = { Callout, Chart };
+   ```
+
+2. Use it as a tag in `.mdx` content; Markdown renders inside, and JSX
+   expressions work:
+
+   ```mdx
+   <Callout type="tip">Markdown **works** inside.</Callout>
+   <Chart data={[1, 2, 3]} live={true} />
+   ```
+
+Notes:
+- Custom components come from the registry — content files **don't** use
+  `import` statements (the registry is the global scope, like Docusaurus).
+- Interactive components (state/effects/browser APIs) go in their own file with
+  a `"use client"` directive, imported into the registry. They hydrate normally
+  despite the static export. `.mdx` compiles at **build time**, so a bad
+  component fails `npm run build` loudly.
+- Both views render the components: humanize (styled) and agent (machine view).
+- A worked example ships at `content/<locale>/docs/mdx-components.mdx`.
 
 ## Task: edit the landing page & site identity
 
@@ -178,6 +219,40 @@ media: [
 
 Put assets in `public/`. Videos play as muted, looping ambient clips.
 
+**Custom component** — the showcase isn't limited to images/videos; it can hold
+any React component you write. See the task below.
+
+## Task: put a custom component in the hero showcase
+
+The hero showcase can render **your own React components** — a live demo, an
+animated diagram, an embed, a stats panel — not just images and videos. This is
+fully **user-owned and upgrade-safe**: you never touch a framework file, and
+`npm run upgrade` never overwrites your components.
+
+Two steps, both in user-owned files:
+
+1. Register the component under a key in `lib/hero-slots.tsx` (this file is
+   yours — `npm run upgrade` seeds it if missing and never overwrites it):
+
+   ```tsx
+   // lib/hero-slots.tsx
+   import { LiveDemo } from "@/components/your-demo"; // import your own files freely
+   export const heroSlots = { demo: <LiveDemo /> };
+   ```
+
+2. Reference the key from `lib/site-config.ts` with `type: "custom"`:
+
+   ```ts
+   // single, or mixed into a carousel array alongside image/video items
+   media: { type: "custom", slot: "demo", placement: "overlap" }
+   ```
+
+Custom slots inherit the same `below`/`overlap` framing and carousel crossfade
+as media. The component can import your own files and third-party libraries. If
+it needs hooks, state, or browser APIs, put it in its own file with a
+`"use client"` directive (don't add `"use client"` to `lib/hero-slots.tsx`
+itself). You don't need to fork or edit the framework to do any of this.
+
 ## Task: change the theme (colors / fonts)
 
 Edit `app/theme.css` — the `@theme` block defines the palette and font tokens:
@@ -213,7 +288,8 @@ missing.
 GitHub-Flavored Markdown: headings (with hover anchors + auto TOC), tables, task
 lists, strikethrough, autolinks, blockquotes, and **inline raw HTML** (rendered
 as-is). Code blocks are highlighted by Shiki (`github-light`). Content is
-trusted/first-party — there is no HTML sanitization.
+trusted/first-party — there is no HTML sanitization. For **live React
+components** in content, use `.mdx` files — see "embed custom components" above.
 
 ---
 
@@ -270,6 +346,6 @@ to merge. Commit first so the post-upgrade `git diff` is easy to review.
 ## Read more
 
 - On-site docs: `content/<locale>/docs/` (getting-started, writing-content,
-  configuration, i18n, deployment, upgrading, markdown-features).
+  configuration, i18n, deployment, upgrading, markdown-features, mdx-components).
 - Framework internals: `dev-docs/` (architecture, rendering pipeline, views &
   routes, theming, deployment, i18n, upgrades).

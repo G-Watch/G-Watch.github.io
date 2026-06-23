@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { AgentShell } from "@/components/agent-shell";
 import { getAllBlogPosts, getBlogPost } from "@/lib/content";
-import { renderMarkdown } from "@/lib/markdown";
+import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, type Locale } from "@/lib/i18n";
 
@@ -36,7 +36,7 @@ export default async function BlogAgentPage({
   const post = getBlogPost(lang, resolved.slug);
   if (!post) notFound();
 
-  const { html } = await renderMarkdown(post.body, { lang });
+  const { html, content } = await renderContent(post, lang);
 
   return (
     <AgentShell
@@ -44,8 +44,10 @@ export default async function BlogAgentPage({
       collection="blog"
       slugPath={post.slugPath}
       title={post.title}
-      html={`<h1>${post.title}</h1>\n${html}`}
+      html={html !== undefined ? `<h1>${post.title}</h1>\n${html}` : undefined}
       strings={getDictionary(lang).agent}
-    />
+    >
+      {content}
+    </AgentShell>
   );
 }

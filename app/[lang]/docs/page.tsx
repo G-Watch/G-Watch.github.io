@@ -2,9 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteShell } from "@/components/site-shell";
 import { DocsSidebar } from "@/components/docs-sidebar";
-import { getDocsNav } from "@/lib/content";
+import {
+  getDocTree,
+  flattenDocLeaves,
+  type DocTreeNode,
+} from "@/lib/content";
 import { getDictionary } from "@/lib/dictionaries";
-import { resolveLocale, localePath } from "@/lib/i18n";
+import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
 
 export async function generateMetadata({
   params,
@@ -15,13 +19,33 @@ export async function generateMetadata({
   return { title: getDictionary(lang).docsIndex.title };
 }
 
+function DocCard({ node, lang }: { node: DocTreeNode; lang: Locale }) {
+  return (
+    <Link
+      href={localePath(lang, `/docs/humanize/${node.slugPath}/`)}
+      className="group rounded-xl border border-line bg-surface p-5 transition-colors hover:border-accent"
+    >
+      <h3 className="font-serif text-lg font-bold text-ink group-hover:text-accent">
+        {node.title}
+      </h3>
+      {node.description && (
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+          {node.description}
+        </p>
+      )}
+    </Link>
+  );
+}
+
 export default async function DocsIndexPage({
   params,
 }: {
   params: Promise<{ lang: string }>;
 }) {
   const lang = resolveLocale((await params).lang);
-  const groups = getDocsNav(lang);
+  const tree = getDocTree(lang);
+  const topLeaves = tree.filter((n) => n.type === "doc");
+  const folders = tree.filter((n) => n.type === "folder");
   const t = getDictionary(lang).docsIndex;
 
   return (
@@ -48,30 +72,34 @@ export default async function DocsIndexPage({
             </header>
 
             <div className="mt-8 space-y-10">
-              {groups.map((group) => (
-                <section key={group.group}>
-                  <h2 className="font-serif text-sm font-bold uppercase tracking-wider text-muted">
-                    {group.group}
-                  </h2>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {group.items.map((item) => (
+              {topLeaves.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {topLeaves.map((node) => (
+                    <DocCard key={node.slugPath} node={node} lang={lang} />
+                  ))}
+                </div>
+              )}
+
+              {folders.map((folder, i) => (
+                <section key={`${folder.title}:${i}`}>
+                  <h2 className="font-serif text-sm font-bold tracking-wider text-muted">
+                    {folder.slugPath ? (
                       <Link
-                        key={item.slugPath}
                         href={localePath(
                           lang,
-                          `/docs/humanize/${item.slugPath}/`,
+                          `/docs/humanize/${folder.slugPath}/`,
                         )}
-                        className="group rounded-xl border border-line bg-surface p-5 transition-colors hover:border-accent"
+                        className="transition-colors hover:text-ink"
                       >
-                        <h3 className="font-serif text-lg font-bold text-ink group-hover:text-accent">
-                          {item.title}
-                        </h3>
-                        {item.description && (
-                          <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-                            {item.description}
-                          </p>
-                        )}
+                        {folder.title}
                       </Link>
+                    ) : (
+                      folder.title
+                    )}
+                  </h2>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {flattenDocLeaves(folder.children).map((node) => (
+                      <DocCard key={node.slugPath} node={node} lang={lang} />
                     ))}
                   </div>
                 </section>

@@ -91,8 +91,14 @@ Body in GitHub-Flavored Markdown. Link locale-relative:
 ![diagram](/diagram.svg)
 ```
 
-- The **sidebar** groups by `group` and sorts by `order`. Give a batch the same
-  `group` and sequence them with `order`.
+- The **sidebar** is a nested tree. Two ways to organize it (combinable):
+  - **Flat + `group`**: files directly in `docs/` are grouped by their `group`
+    frontmatter, sorted by `order`.
+  - **Folders**: subfolders become nested sections, any depth. A folder's label
+    is its prettified name (`advanced` → "Advanced"); it sorts by the smallest
+    `order` inside. Add `index.md`/`index.mdx` to a folder to set its
+    title/order and give it a clickable overview page. The folder name is part
+    of the URL (`docs/guides/advanced/x.md` → `/docs/humanize/guides/advanced/x/`).
 - To translate, create the same file under another locale
   (`content/zh/docs/<slug>.md`) with a translated `title`/`group`. Untranslated
   pages **fall back** to the default locale automatically.
@@ -177,6 +183,7 @@ locales: {
     tagline, description,
     hero: { eyebrow, headline, subhead,
             primaryCta: { label, href }, secondaryCta: { label, href },
+            note: { prefix, link: { label, href }, suffix },  // optional line under subhead
             media: { type: "image", src: "/hero.png", alt: "…" } },  // optional
     features: [
       { title, body, image: "/features/landing.svg" },  // image optional
@@ -193,6 +200,13 @@ locales: {
   zh: { /* same shape */ },
 }
 ```
+
+`hero.note` (optional) adds a small line under the subhead — `prefix` + an
+optional inline `link` + `suffix`. Internal link hrefs are locale-relative
+(`/docs/…`, locale prefix added automatically); external (`https://…`) open in a
+new tab. Style it with `note.style`: `variant` (`"text"` | `"pill"`), `tone`
+(`muted`/`soft`/`ink`/`accent`), `size` (`xs`/`sm`/`base`), or the escape hatches
+`className` / `linkClassName` (literal Tailwind strings for full control).
 
 Add a feature illustration by dropping an SVG/PNG in `public/features/` and
 referencing it as `image`. `hero.media` (optional) shows an image or video alongside the hero text. Pass
@@ -218,6 +232,17 @@ media: [
 ```
 
 Put assets in `public/`. Videos play as muted, looping ambient clips.
+
+**Tune the overlap frame** with `layout` (geometry read from the first item;
+`feather` is per item). If a fade hides content, lower `feather` (0 = off):
+
+```ts
+media: { type: "image", src: "/hero.png", placement: "overlap",
+  layout: { textRatio: 1.25, feather: 0.35, offsetX: -14, width: 130, glow: true } }
+// textRatio = text col : showcase col width (1 = equal; >1 favors the text).
+// feather 0 (sharp) … 1 (strong); default 0.4 for media, 0 for custom slots.
+// offsetX %, width % — overlap only. glow = ambient blur behind the showcase.
+```
 
 **Custom component** — the showcase isn't limited to images/videos; it can hold
 any React component you write. See the task below.

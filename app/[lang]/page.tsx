@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { HeroMedia } from "@/components/hero-media";
 import { getSiteContent } from "@/lib/site-config";
@@ -8,6 +8,24 @@ import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
 import { formatDate } from "@/lib/format";
+
+/** Hero-note text tone → color class (literal so Tailwind generates them). */
+const NOTE_TONE: Record<string, string> = {
+  muted: "text-muted",
+  soft: "text-ink-soft",
+  ink: "text-ink",
+  accent: "text-accent",
+};
+
+/** Hero-note text size → size class. */
+const NOTE_SIZE: Record<string, string> = {
+  xs: "text-xs",
+  sm: "text-sm",
+  base: "text-base",
+};
+
+const NOTE_LINK_DEFAULT =
+  "font-medium text-accent underline-offset-2 hover:text-accent-strong hover:underline";
 
 /** Render plain text, turning `backtick` spans into <code>. */
 function inlineCode(text: string) {
@@ -37,6 +55,32 @@ export default async function HomePage({
   const recentPosts = getAllBlogPosts(lang).slice(0, 3);
   const firstMedia = Array.isArray(hero.media) ? hero.media[0] : hero.media;
   const overlapMedia = firstMedia?.placement === "overlap";
+  // Text-column : showcase-column width ratio for overlap (1 = equal split).
+  const textRatio = firstMedia?.layout?.textRatio ?? 1;
+
+  // Resolve hero-note styling.
+  const noteStyle = hero.note?.style ?? {};
+  const noteVariant = noteStyle.variant ?? "text";
+  const noteToneClass = NOTE_TONE[noteStyle.tone ?? "muted"] ?? NOTE_TONE.muted;
+  const noteSizeClass = NOTE_SIZE[noteStyle.size ?? "sm"] ?? NOTE_SIZE.sm;
+  const noteExtraClass = noteStyle.className ?? "";
+  const noteLinkClass = noteStyle.linkClassName ?? NOTE_LINK_DEFAULT;
+  const noteLinkEl = hero.note?.link ? (
+    hero.note.link.href.startsWith("http") ? (
+      <a
+        href={hero.note.link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={noteLinkClass}
+      >
+        {hero.note.link.label}
+      </a>
+    ) : (
+      <Link href={localePath(lang, hero.note.link.href)} className={noteLinkClass}>
+        {hero.note.link.label}
+      </Link>
+    )
+  ) : null;
 
   return (
     <SiteShell lang={lang}>
@@ -58,8 +102,13 @@ export default async function HomePage({
           <div
             className={
               overlapMedia
-                ? "grid items-center gap-8 py-16 sm:py-20 lg:grid-cols-2 lg:gap-6 lg:py-24"
+                ? "grid items-center gap-8 py-16 sm:py-20 lg:[grid-template-columns:var(--hero-cols)] lg:gap-6 lg:py-24"
                 : `pt-20 text-center sm:pt-28 ${hero.media ? "" : "pb-16"}`
+            }
+            style={
+              overlapMedia
+                ? ({ "--hero-cols": `${textRatio}fr 1fr` } as CSSProperties)
+                : undefined
             }
           >
             <div
@@ -73,7 +122,7 @@ export default async function HomePage({
               <h1
                 className={`mt-6 font-serif text-4xl font-bold leading-tight tracking-tight text-ink ${
                   overlapMedia
-                    ? "mx-auto max-w-xl sm:text-5xl lg:mx-0"
+                    ? "mx-auto max-w-xl sm:text-5xl lg:mx-0 lg:max-w-none"
                     : "mx-auto max-w-3xl sm:text-6xl"
                 }`}
               >
@@ -81,11 +130,43 @@ export default async function HomePage({
               </h1>
               <p
                 className={`mt-6 text-lg leading-relaxed text-ink-soft ${
-                  overlapMedia ? "mx-auto max-w-md lg:mx-0" : "mx-auto max-w-2xl"
+                  overlapMedia
+                    ? "mx-auto max-w-md lg:mx-0 lg:max-w-none"
+                    : "mx-auto max-w-2xl"
                 }`}
               >
                 {hero.subhead}
               </p>
+              {hero.note &&
+                (noteVariant === "pill" ? (
+                  <div
+                    className={`mt-5 flex ${
+                      overlapMedia
+                        ? "justify-center lg:justify-start"
+                        : "justify-center"
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-paper-deep px-3.5 py-1.5 ${noteSizeClass} ${noteToneClass} ${noteExtraClass}`}
+                    >
+                      {hero.note.prefix}
+                      {noteLinkEl}
+                      {hero.note.suffix}
+                    </span>
+                  </div>
+                ) : (
+                  <p
+                    className={`mt-5 ${noteSizeClass} ${noteToneClass} ${
+                      overlapMedia
+                        ? "mx-auto max-w-md lg:mx-0 lg:max-w-none"
+                        : "mx-auto max-w-2xl"
+                    } ${noteExtraClass}`}
+                  >
+                    {hero.note.prefix}
+                    {noteLinkEl}
+                    {hero.note.suffix}
+                  </p>
+                ))}
               <div
                 className={`mt-9 flex flex-wrap items-center gap-3 ${
                   overlapMedia ? "justify-center lg:justify-start" : "justify-center"

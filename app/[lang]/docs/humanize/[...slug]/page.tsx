@@ -6,7 +6,7 @@ import { DocsSidebar } from "@/components/docs-sidebar";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Prose } from "@/components/prose";
 import { ViewSwitch } from "@/components/view-switch";
-import { getAllDocs, getDoc } from "@/lib/content";
+import { getAllDocs, getDoc, getDocsReadingOrder } from "@/lib/content";
 import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
@@ -44,10 +44,11 @@ export default async function DocPage({
   const { html, content, toc } = await renderContent(doc, lang);
   const dict = getDictionary(lang);
 
-  const docs = getAllDocs(lang);
-  const index = docs.findIndex((d) => d.slugPath === doc.slugPath);
-  const prev = index > 0 ? docs[index - 1] : undefined;
-  const next = index < docs.length - 1 ? docs[index + 1] : undefined;
+  const reading = getDocsReadingOrder(lang);
+  const index = reading.findIndex((d) => d.slugPath === doc.slugPath);
+  const prev = index > 0 ? reading[index - 1] : undefined;
+  const next =
+    index >= 0 && index < reading.length - 1 ? reading[index + 1] : undefined;
 
   return (
     <SiteShell lang={lang}>

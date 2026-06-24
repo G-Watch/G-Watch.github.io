@@ -125,24 +125,133 @@ export function getDoc(lang: Locale, slug: string[]): ContentItem | undefined {
   return getAllDocs(lang).find((d) => d.slugPath === target);
 }
 
-export interface DocGroup {
-  group: string;
-  items: ContentItem[];
+/** A node in the docs sidebar tree: either a page or a (possibly nested) folder. */
+export interface DocTreeNode {
+  type: "doc" | "folder";
+  title: string;
+  order: number;
+  /** Link target — set for pages, and for folders that have an index page. */
+  slugPath?: string;
+  /** Shown on the docs landing page cards (pages only). */
+  description?: string;
+  children: DocTreeNode[];
 }
 
-/** Docs grouped by their `group` frontmatter, preserving sorted order. */
-export function getDocsNav(lang: Locale): DocGroup[] {
-  const groups: DocGroup[] = [];
-  for (const doc of getAllDocs(lang)) {
-    const name = doc.group ?? "Docs";
-    let bucket = groups.find((g) => g.group === name);
-    if (!bucket) {
-      bucket = { group: name, items: [] };
-      groups.push(bucket);
+/** Filename (without extension) that turns a folder into a landing page. */
+const FOLDER_INDEX = "index";
+
+/** "advanced-topics" → "Advanced Topics" (fallback folder title). */
+function humanizeSegment(seg: string): string {
+  return seg
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Build the docs sidebar tree. Nesting comes from folders under
+ * `content/<locale>/docs/`; a file's `group` frontmatter still groups flat
+ * root-level files (backward compatible). An optional `index.md`/`index.mdx` in
+ * a folder sets that folder's title/order and gives it an overview page.
+ */
+export function getDocTree(lang: Locale): DocTreeNode[] {
+  const rootChildren: DocTreeNode[] = [];
+  const folderByKey = new Map<string, DocTreeNode>();
+
+  const ensureFolder = (keys: string[], titles: string[]): DocTreeNode | null => {
+    let parent = rootChildren;
+    let acc = "";
+    let folder: DocTreeNode | null = null;
+    for (let i = 0; i < keys.length; i++) {
+      acc += `/${keys[i]}`;
+      let f = folderByKey.get(acc);
+      if (!f) {
+        f = { type: "folder", title: titles[i], order: 1000, children: [] };
+        folderByKey.set(acc, f);
+        parent.push(f);
+      }
+      parent = f.children;
+      folder = f;
     }
-    bucket.items.push(doc);
+    return folder;
+  };
+
+  for (const doc of getAllDocs(lang)) {
+    const order = doc.order ?? 1000;
+    const last = doc.slug[doc.slug.length - 1];
+    const isFolderIndex = doc.slug.length >= 2 && last === FOLDER_INDEX;
+
+    // Folder chain this doc lives under (and its display titles).
+    let keys: string[] = [];
+    let titles: string[] = [];
+    if (doc.slug.length >= 2) {
+      keys = doc.slug.slice(0, -1);
+      titles = keys.map(humanizeSegment);
+    } else if (doc.group && !isFolderIndex) {
+      keys = [`group:${doc.group}`];
+      titles = [doc.group];
+    }
+
+    const folder = ensureFolder(keys, titles);
+
+    if (isFolderIndex && folder) {
+      // Configure the folder rather than adding a separate child.
+      if (doc.title) folder.title = doc.title;
+      folder.slugPath = doc.slugPath;
+      folder.description = doc.description;
+    } else {
+      (folder ? folder.children : rootChildren).push({
+        type: "doc",
+        title: doc.title,
+        order,
+        slugPath: doc.slugPath,
+        description: doc.description,
+        children: [],
+      });
+    }
+
+    // Let the smallest child order float each ancestor folder up the list.
+    let acc = "";
+    for (const k of keys) {
+      acc += `/${k}`;
+      const f = folderByKey.get(acc);
+      if (f) f.order = Math.min(f.order, order);
+    }
   }
-  return groups;
+
+  const sortNodes = (nodes: DocTreeNode[]) => {
+    nodes.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+    for (const n of nodes) if (n.children.length) sortNodes(n.children);
+  };
+  sortNodes(rootChildren);
+  return rootChildren;
+}
+
+/** Flatten the page leaves under a set of nodes (depth-first), for card lists. */
+export function flattenDocLeaves(nodes: DocTreeNode[]): DocTreeNode[] {
+  const out: DocTreeNode[] = [];
+  const walk = (ns: DocTreeNode[]) => {
+    for (const n of ns) {
+      if (n.type === "doc") out.push(n);
+      else walk(n.children);
+    }
+  };
+  walk(nodes);
+  return out;
+}
+
+/** Pages in sidebar reading order (depth-first) — drives prev/next links. */
+export function getDocsReadingOrder(
+  lang: Locale,
+): { slugPath: string; title: string }[] {
+  const out: { slugPath: string; title: string }[] = [];
+  const walk = (nodes: DocTreeNode[]) => {
+    for (const n of nodes) {
+      if (n.slugPath) out.push({ slugPath: n.slugPath, title: n.title });
+      if (n.children.length) walk(n.children);
+    }
+  };
+  walk(getDocTree(lang));
+  return out;
 }
 
 /* ------------------------------------------------------------------ blog -- */

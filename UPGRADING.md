@@ -62,8 +62,11 @@ npm run upgrade -- --dry-run      # show what would change, do nothing
 npm run upgrade -- --force        # discard uncommitted framework edits and proceed
 ```
 
-By default the script refuses to overwrite framework files that have
-uncommitted changes — commit or stash first, or pass `--force`.
+By default the script refuses to overwrite framework files that have local edits
+**differing from upstream** — commit or stash first, or pass `--force`. Framework
+files left uncommitted by a previous upgrade (i.e. already matching upstream)
+don't trip this, so you can run `npm run upgrade` several times in a row without
+committing in between.
 
 ## Tips
 

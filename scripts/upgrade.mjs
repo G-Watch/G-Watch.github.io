@@ -14,6 +14,10 @@
  * adds an `upstream` git remote if missing, fetches it, and checks out each
  * framework path at the chosen ref. Files in `review` (e.g. package.json) are
  * written next to yours as `<file>.upstream` for you to diff and merge.
+ *
+ * The dirty-tree safety check only trips on framework files whose contents
+ * differ from the ref being applied, so you can run it several times in a row
+ * (or re-run after a partial upgrade) without committing in between.
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -91,7 +95,11 @@ if (tryGit(`rev-parse --verify --quiet ${ref}^{commit}`) === null) {
   die(`Ref '${ref}' not found upstream. Try a tag like --ref v1.0.0.`);
 }
 
-// --- Safety: refuse if framework files have uncommitted changes -----------
+// --- Safety: refuse only if framework files have local edits that DIFFER ---
+// from the upstream version we're about to apply. A framework file that is
+// "dirty" vs. HEAD but already identical to the ref (e.g. left uncommitted by a
+// previous upgrade) is a no-op to re-apply — re-applying loses nothing. Skipping
+// those lets you run `npm run upgrade` repeatedly without committing in between.
 const porcelain = tryGit("status --porcelain") ?? "";
 const dirty = porcelain
   .split("\n")
@@ -102,9 +110,15 @@ const underFramework = (file) =>
   frameworkPaths.some((p) => file === p || file.startsWith(`${p}/`));
 const dirtyFramework = dirty.filter(underFramework);
 
-if (!dryRun && dirtyFramework.length && !force) {
-  log("\n⚠ These framework files have uncommitted changes and would be overwritten:");
-  dirtyFramework.forEach((f) => log(`    ${f}`));
+// A file only risks losing work if its working tree differs from the ref.
+// `git diff --quiet <ref> -- <file>` exits non-zero (→ tryGit null) when different.
+const conflicting = dirtyFramework.filter(
+  (f) => tryGit(`diff --quiet ${ref} -- ${pathspec(f)}`) === null,
+);
+
+if (!dryRun && conflicting.length && !force) {
+  log("\n⚠ These framework files have local edits that differ from upstream and would be overwritten:");
+  conflicting.forEach((f) => log(`    ${f}`));
   die("Commit/stash them, or re-run with --force to discard them.");
 }
 

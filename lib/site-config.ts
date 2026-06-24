@@ -20,6 +20,22 @@ export interface NavLink {
  * "below" (default) — floating card beneath the hero text;
  * "overlap" — same height band as the text, shifted to the side.
  */
+/**
+ * Overlap-frame tuning for a hero showcase item.
+ * - `feather`: edge fade 0 (sharp) … 1 (strong). Default 0.4 for image/video,
+ *   0 for custom slots (so custom components keep crisp edges).
+ * - `offsetX` / `width`: overlap geometry in %, read from the first item.
+ * - `glow`: ambient blur behind the showcase.
+ */
+export interface HeroMediaLayout {
+  feather?: number;
+  offsetX?: number;
+  width?: number;
+  glow?: boolean;
+  /** Overlap text-col : showcase-col width ratio (1 = equal; >1 favors the text). */
+  textRatio?: number;
+}
+
 export type HeroMedia =
   | {
       /** "image" (default) or "video". */
@@ -31,6 +47,7 @@ export type HeroMedia =
       /** Alt text. */
       alt?: string;
       placement?: "below" | "overlap";
+      layout?: HeroMediaLayout;
     }
   | {
       /** A custom React component from lib/hero-slots.tsx. */
@@ -38,6 +55,7 @@ export type HeroMedia =
       /** Key into the heroSlots registry in lib/hero-slots.tsx. */
       slot: string;
       placement?: "below" | "overlap";
+      layout?: HeroMediaLayout;
     };
 
 export interface FeatureCard {
@@ -76,6 +94,19 @@ export interface LocaleContent {
     secondaryCta: NavLink;
     /** Optional showcase image/video — a single item or an array (arrays crossfade). */
     media?: HeroMedia | HeroMedia[];
+    /** Optional attribution line below the subhead, with one inline link. */
+    note?: {
+      prefix?: string;
+      link?: { label: string; href: string };
+      suffix?: string;
+      style?: {
+        variant?: "text" | "pill";
+        tone?: "muted" | "soft" | "ink" | "accent";
+        size?: "xs" | "sm" | "base";
+        className?: string;
+        linkClassName?: string;
+      };
+    };
   };
   features: FeatureCard[];
   quickstart: Quickstart;
@@ -129,9 +160,21 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "See inside your GPU kernels",
         subhead:
-          "Hardware-counter profiling, instruction-level PC sampling, intra-kernel phase tracing, and SASS binary analysis — across NVIDIA, AMD, and TPU. Built so agents can profile, diagnose, and optimize kernels on their own.",
+          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring intra-kernel tracing (iket) & profiling, SASS binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
         primaryCta: { label: "Read the docs", href: "/docs/" },
         secondaryCta: { label: "Quickstart", href: "/docs/humanize/installation/" },
+        media: { type: "custom", slot: "arch", placement: "overlap", layout: { textRatio: 1.3 } },
+        note: {
+          prefix: "G-Watch is an open-source project under ",
+          link: { label: "Mars Compute", href: "https://mars-compute.com/" },
+          suffix: ".",
+          style: {
+            size: "base",
+            className: "text-red-600! font-bold text-lg! italic",
+            linkClassName:
+              "font-bold text-red-600 underline decoration-2 underline-offset-4 hover:text-red-700 hover:decoration-red-700",
+          },
+        },
       },
       features: [
         {
@@ -190,11 +233,23 @@ export const siteConfig: SiteConfig = {
         "G-Watch 是一个面向智能体（agent）的 GPU/TPU kernel 优化工具箱。它在 NVIDIA、AMD GPU 与 Google TPU 上提供丰富的性能剖析能力，并配备用于检视编译器生成的 kernel 二进制的程序分析工具。",
       hero: {
         eyebrow: "",
-        headline: "看清 GPU kernel 内部发生了什么",
+        headline: "细粒度分析 GPU Kernel",
         subhead:
-          "硬件计数器剖析、指令级 PC 采样、kernel 内 phase 追踪、SASS 二进制分析——覆盖 NVIDIA、AMD 与 TPU。专为智能体而设计，让它能自主完成剖析、诊断与优化。",
+          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含内核级追踪 (iket)、SASS 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
         primaryCta: { label: "阅读文档", href: "/docs/" },
         secondaryCta: { label: "快速开始", href: "/docs/humanize/installation/" },
+        media: { type: "custom", slot: "archZh", placement: "overlap", layout: { textRatio: 1.3 } },
+        note: {
+          prefix: "G-Watch 是 ",
+          link: { label: "Mars Compute", href: "https://mars-compute.com/" },
+          suffix: " 旗下的开源项目。",
+          style: {
+            size: "base",
+            className: "text-red-600! font-bold text-lg! italic",
+            linkClassName:
+              "font-bold text-red-600 underline decoration-2 underline-offset-4 hover:text-red-700 hover:decoration-red-700",
+          },
+        },
       },
       features: [
         {

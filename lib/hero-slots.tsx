@@ -10,5 +10,9 @@
 //
 // Seeded by `npm run upgrade` when missing; never overwritten once it exists.
 import type { ReactNode } from "react";
+import { HeroArchButtons } from "@/lib/hero-arch-buttons";
 
-export const heroSlots: Record<string, ReactNode> = {};
+export const heroSlots: Record<string, ReactNode> = {
+  arch: <HeroArchButtons caption="Install G-Watch on major GPU platforms" />,
+  archZh: <HeroArchButtons caption="安装 G-Watch" />,
+};

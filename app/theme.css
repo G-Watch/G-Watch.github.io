@@ -25,3 +25,74 @@
   --shadow-paper: 0 1px 2px rgba(43, 41, 37, 0.04),
     0 8px 24px -12px rgba(43, 41, 37, 0.12);
 }
+
+/*
+ * Self-hosted Space Grotesk (variable, latin subset) — USER-OWNED.
+ * Used for the GPU-platform showcase labels (lib/hero-arch-buttons.tsx).
+ * Self-hosting (rather than next/font in the framework-owned app/layout.tsx)
+ * keeps this entirely in user-owned files. Font file lives in public/fonts/.
+ */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+}
+
+/*
+ * Flowing-light border — USER-OWNED. A bright accent arc travels around the
+ * element's rounded border (used by the GPU-platform showcase in
+ * lib/hero-arch-buttons.tsx). The conic gradient is masked to a thin ring so
+ * only the border shows; @property lets the angle animate.
+ */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes beam-rotate {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+.beam-border {
+  position: relative;
+}
+
+.beam-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px; /* ring thickness */
+  /* Two layers, both clipped to the ring: a faint static base (the visible
+     frame) + a bright accent→white arc that travels around. This single ring
+     IS the border, so nothing can misalign with it. */
+  background:
+    conic-gradient(
+      from var(--beam-angle),
+      transparent 0deg,
+      transparent 250deg,
+      color-mix(in srgb, var(--color-accent) 35%, transparent) 300deg,
+      var(--color-accent) 340deg,
+      #ffffff 352deg,
+      var(--color-accent) 360deg
+    ),
+    var(--color-line);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-rotate 4s linear infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-border::before {
+    animation: none;
+  }
+}

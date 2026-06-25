@@ -13,6 +13,6 @@ import type { ReactNode } from "react";
 import { HeroArchButtons } from "@/lib/hero-arch-buttons";
 
 export const heroSlots: Record<string, ReactNode> = {
-  arch: <HeroArchButtons caption="Install G-Watch on major GPU platforms" />,
+  arch: <HeroArchButtons caption="Install G-Watch" />,
   archZh: <HeroArchButtons caption="安装 G-Watch" />,
 };

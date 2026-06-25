@@ -67,6 +67,10 @@ export interface FeatureCard {
   video?: string;
   /** Poster frame shown for the video before it plays. */
   poster?: string;
+  /** Custom visual component for the card media, keyed into lib/feature-slots.tsx. Takes precedence over video/image. */
+  slot?: string;
+  /** Makes the whole card a link (locale-relative, e.g. "/docs/humanize/..."). */
+  href?: string;
 }
 
 export interface QuickstartStep {
@@ -178,14 +182,16 @@ export const siteConfig: SiteConfig = {
       },
       features: [
         {
+          title: "Intra-kernel Tracing (iket)",
+          body: "See the phase timeline inside a single kernel: load, compute, epilogue, and the bubbles between them. Mark scopes in CUDA, TileLang, CuTeDSL, or Triton, then read the trace as a human report or an agent view.",
+          slot: "iket-views",
+          href: "/docs/humanize/intra-kernel-tracing/index/",
+          image: "/features/two-views.svg",
+        },
+        {
           title: "Counter-based profiling",
           body: "Range profiling collects per-launch hardware counters — occupancy, pipe/tensor-core utilization, memory throughput, achieved-vs-peak cycles — and PC sampling localizes the bottleneck to the instructions that stall and why (memory waits, dependency, divergence, throttles), mapped to source and SASS.",
           image: "/features/landing.svg",
-        },
-        {
-          title: "Intra-kernel tracing",
-          body: "Instrument device-side scope markers to trace the in-kernel phase timeline — per-phase durations, pipeline bubbles, synchronization overhead, and warp-role scheduling within a single launch. The only tool with this temporal view.",
-          image: "/features/two-views.svg",
         },
         {
           title: "Binary analysis",
@@ -253,14 +259,16 @@ export const siteConfig: SiteConfig = {
       },
       features: [
         {
+          title: "内核级追踪 (iket)",
+          body: "看清单次 kernel 内部的 phase 时间线：load、compute、epilogue，以及它们之间的气泡。在 CUDA、TileLang、CuTeDSL 或 Triton 里打 scope，然后以人类报告或 agent 视图查看追踪结果。",
+          slot: "iket-views",
+          href: "/docs/humanize/intra-kernel-tracing/index/",
+          image: "/features/two-views.svg",
+        },
+        {
           title: "基于计数器的剖析",
           body: "Range profiling 按每次 launch 采集硬件计数器——占用率、pipe/tensor core 利用率、访存吞吐、达成-对-峰值的 cycle 比；PC 采样进一步把瓶颈定位到具体 stall 的指令及其原因（访存等待、依赖、分支发散、throttle），并映射到源码与 SASS。",
           image: "/features/landing.svg",
-        },
-        {
-          title: "Kernel 内追踪",
-          body: "通过设备侧 scope marker 追踪 kernel 内 phase 时间线——单次 launch 内各 phase 时长、流水线气泡、同步开销与 warp 角色调度。唯一具备这一时间视图的工具。",
-          image: "/features/two-views.svg",
         },
         {
           title: "二进制分析",

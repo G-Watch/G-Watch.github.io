@@ -16,7 +16,13 @@ A runnable example is available at
 
 ```bash
 pip install nvidia-cutlass-dsl
+
+# for humanized visualization
+python3 examples/cuda/trace/trace_cute_matmul.py --report trace.html
+
+# for agentic visualization
 python3 examples/cuda/trace/trace_cute_matmul.py --report trace.json
+gwatch show trace.json
 ```
 
 <video src="/media/iket_cutedsl.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>

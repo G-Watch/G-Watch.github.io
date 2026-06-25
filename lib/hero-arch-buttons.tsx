@@ -38,7 +38,7 @@ function Logo({ arch }: { arch: Arch }) {
   // skew-x-12 counter-skews the content so it sits upright inside the
   // -skew-x-12 parallelogram frame; it grows a bit when the button is hovered.
   const base =
-    "relative z-10 h-24 w-24 flex-none skew-x-12 transition-transform duration-300 ease-out group-hover:scale-110";
+    "relative z-10 h-16 w-16 flex-none skew-x-12 transition-transform duration-300 ease-out group-hover:scale-110";
   if (arch.logo) {
     // Plain <img>: the static export has no next/image optimizer.
     // eslint-disable-next-line @next/next/no-img-element
@@ -90,7 +90,7 @@ function ArchButton({ arch }: { arch: Arch }) {
           {/* LEFT — light logo panel. The border-r renders slanted, parallel to
               the frame edges. Grows on hover. */}
           <div
-            className="relative flex items-center justify-center overflow-hidden border-r-2 px-9 transition-all duration-300 ease-out group-hover:px-11"
+            className="relative flex items-center justify-center overflow-hidden border-r-2 px-6 transition-all duration-300 ease-out group-hover:px-8"
             style={{
               borderColor: "rgba(255,255,255,0.55)",
               // Solid light brand tint (pale green / pale red) so the black logo
@@ -107,9 +107,9 @@ function ArchButton({ arch }: { arch: Arch }) {
           </div>
           {/* RIGHT — label: dark brand color on the light default, fading to
               white once the deep fill appears on hover. */}
-          <div className="flex flex-1 items-center px-11 py-9">
+          <div className="flex flex-1 items-center px-7 py-5">
             <span
-              className="skew-x-12 whitespace-nowrap text-5xl font-bold italic text-[color:var(--label)] transition-colors duration-300 ease-out group-hover:text-white"
+              className="skew-x-12 whitespace-nowrap text-4xl font-bold italic text-[color:var(--label)] transition-colors duration-300 ease-out group-hover:text-white"
               style={
                 {
                   fontFamily: '"Space Grotesk", ui-sans-serif, sans-serif',
@@ -131,10 +131,10 @@ export function HeroArchButtons({ caption }: { caption: string }) {
     // The flowing-light beam IS the border (see .beam-border in theme.css).
     // Caption lives inside the box, so no line sits behind it.
     <div className="beam-border mx-auto w-fit rounded-2xl px-8 py-8">
-      <p className="mb-6 font-sans text-xl font-bold tracking-wide text-accent">
+      <p className="mb-6 text-center font-sans text-xl font-bold tracking-wide text-accent">
         {caption}
       </p>
-      <div className="flex w-fit flex-col gap-6">
+      <div className="flex w-fit flex-col gap-5">
         {ARCHES.map((arch) => (
           <ArchButton key={arch.label} arch={arch} />
         ))}

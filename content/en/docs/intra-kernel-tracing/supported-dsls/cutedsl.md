@@ -14,6 +14,11 @@ spotting pipeline bubbles, synchronization overhead, and warp-role scheduling.
 A runnable example is available at
 [`examples/cuda/trace/trace_cute_matmul.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_cute_matmul.py).
 
+```bash
+pip install nvidia-cutlass-dsl
+python3 examples/cuda/trace/trace_cute_matmul.py --report trace.json
+```
+
 <video src="/media/iket_cutedsl.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
 ## Mark scopes in the kernel

@@ -4,7 +4,9 @@ import type { Metadata } from "next";
 import { SiteShell } from "@/components/site-shell";
 import { Prose } from "@/components/prose";
 import { ViewSwitch } from "@/components/view-switch";
-import { getAllBlogPosts, getBlogPost } from "@/lib/content";
+import { AuthorList } from "@/components/author-list";
+import { getAllBlogPosts, getBlogPost, resolveAuthors } from "@/lib/content";
+import { authors as authorRegistry } from "@/lib/authors";
 import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { formatDate } from "@/lib/format";
@@ -42,6 +44,7 @@ export default async function BlogPostPage({
 
   const { html, content } = await renderContent(post, lang);
   const dict = getDictionary(lang);
+  const postAuthors = resolveAuthors(post.authors, authorRegistry);
 
   return (
     <SiteShell lang={lang}>
@@ -59,6 +62,11 @@ export default async function BlogPostPage({
             <p className="mt-4 text-lg leading-relaxed text-muted">
               {post.description}
             </p>
+          )}
+          {postAuthors.length > 0 && (
+            <div className="mt-7">
+              <AuthorList authors={postAuthors} align="center" />
+            </div>
           )}
           <div className="mt-6 flex justify-center">
             <ViewSwitch

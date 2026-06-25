@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteShell } from "@/components/site-shell";
-import { getAllBlogPosts } from "@/lib/content";
+import { AuthorList } from "@/components/author-list";
+import { getAllBlogPosts, resolveAuthors } from "@/lib/content";
+import { authors as authorRegistry } from "@/lib/authors";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
@@ -64,6 +66,14 @@ export default async function BlogIndexPage({
                   {post.description}
                 </p>
               )}
+              {(() => {
+                const a = resolveAuthors(post.authors, authorRegistry);
+                return a.length > 0 ? (
+                  <div className="mt-4">
+                    <AuthorList authors={a} align="left" compact />
+                  </div>
+                ) : null;
+              })()}
               <div className="mt-4 flex items-center gap-4">
                 <Link
                   href={localePath(lang, `/blog/humanize/${post.slugPath}/`)}

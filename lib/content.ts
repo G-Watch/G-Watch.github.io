@@ -6,6 +6,20 @@ import { defaultLocale, type Locale } from "./i18n";
 /** A content collection lives under content/<locale>/<kind>. */
 export type Collection = "docs" | "blog";
 
+/** A blog author. Define once in lib/authors.ts, or inline in frontmatter. */
+export interface Author {
+  /** Display name. */
+  name: string;
+  /** Avatar image under public/, e.g. "/authors/ada.jpg". */
+  avatar?: string;
+  /** Contact email — rendered as a mailto link. */
+  email?: string;
+  /** Affiliation / organization. */
+  affiliation?: string;
+  /** Optional homepage; the author's name links here when set. */
+  url?: string;
+}
+
 export interface ContentMeta {
   title: string;
   description?: string;
@@ -17,6 +31,24 @@ export interface ContentMeta {
   group?: string;
   tags?: string[];
   draft?: boolean;
+  /** Blog authors: registry keys (see lib/authors.ts) and/or inline objects. */
+  authors?: (string | Author)[];
+}
+
+/**
+ * Resolve a post's raw `authors` frontmatter against an author registry.
+ * String entries are looked up by key; object entries are used as-is.
+ * Unknown keys are dropped. The registry is passed in so this stays a pure
+ * function (the registry lives in user-owned lib/authors.ts).
+ */
+export function resolveAuthors(
+  raw: (string | Author)[] | undefined,
+  registry: Record<string, Author>,
+): Author[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => (typeof entry === "string" ? registry[entry] : entry))
+    .filter((a): a is Author => Boolean(a && a.name));
 }
 
 export interface ContentItem extends ContentMeta {
@@ -78,6 +110,7 @@ function fileToItem(
     group: meta.group,
     tags: meta.tags,
     draft: meta.draft ?? false,
+    authors: Array.isArray(meta.authors) ? meta.authors : undefined,
   };
 }
 

@@ -20,7 +20,7 @@ draws a hard line between two kinds of files:
 | **Framework-owned** | `app/[lang]/`, `components/`, the rendering libs, configs, `dev-docs/` | Overwritten from upstream |
 | **User-owned** | `content/`, `public/`, `lib/site-config.ts`, `lib/hero-slots.tsx`, `app/theme.css` | **Never touched** |
 | **Review** | `package.json` | Upstream copy written to `package.json.upstream` for you to merge |
-| **Seed** | new user-owned files like `lib/hero-slots.tsx`, `lib/mdx-components.tsx` | Created **only if missing**, then yours |
+| **Seed** | new user-owned files like `lib/hero-slots.tsx`, `lib/feature-slots.tsx`, `lib/authors.ts`, `lib/mdx-components.tsx` | Created **only if missing**, then yours |
 
 The **Seed** row is how new user-editable files reach older clones: when the
 framework starts depending on a file you're meant to own, upgrade creates it from
@@ -38,6 +38,8 @@ Edit these freely — upgrades won't clobber them:
 - `content/<locale>/docs/*.{md,mdx}`, `content/<locale>/blog/*.{md,mdx}` — your content
 - `lib/site-config.ts` — name, tagline, nav, hero, features, quickstart, footer
 - `lib/hero-slots.tsx` — custom hero showcase components
+- `lib/feature-slots.tsx` — custom feature-card media components
+- `lib/authors.ts` — blog author registry
 - `lib/mdx-components.tsx` — components usable inside `.mdx` content
 - `app/theme.css` — colors and font mappings
 - `public/` — your images and assets

@@ -34,6 +34,8 @@ default. Blog mirrors docs at `/<lang>/blog/{humanize,agent}/<slug>/`.
    - `content/` — your docs and blog (`.md` or `.mdx`)
    - `lib/site-config.ts` — project identity, landing copy, nav, footer
    - `lib/hero-slots.tsx` — your custom hero showcase components
+   - `lib/feature-slots.tsx` — your custom components for feature-card media
+   - `lib/authors.ts` — blog author registry
    - `lib/mdx-components.tsx` — your components for use inside `.mdx` content
    - `app/theme.css` — palette and font tokens
    - `public/` — images and assets
@@ -57,6 +59,8 @@ content/<locale>/docs/*.md|mdx docs (sidebar)        ← author here
 content/<locale>/blog/*.md|mdx blog posts            ← author here
 lib/site-config.ts             identity, hero, features, quickstart, nav, footer
 lib/hero-slots.tsx             custom hero showcase components   ← author here
+lib/feature-slots.tsx          custom feature-card media         ← author here
+lib/authors.ts                 blog author registry              ← author here
 lib/mdx-components.tsx         components usable inside .mdx     ← author here
 app/theme.css                  colors + font variables
 public/                        images/assets (e.g. /features/*.svg)
@@ -113,12 +117,33 @@ title: Post Title
 description: One-line summary.
 date: 2026-06-22            # ISO date; posts sort newest-first
 tags: [Announcement]
+authors: [ada, lin]        # optional; see Authors below
 ---
 
 # Post Title
 
 Same Markdown + rendering as docs.
 ```
+
+**Authors** (optional) show under the post title (avatar, name, affiliation ·
+email) and as a compact byline in the blog index. Register them once in the
+user-owned `lib/authors.ts` (seeded on upgrade, never overwritten) and reference
+by key, or write one inline:
+
+```ts
+// lib/authors.ts
+export const authors = {
+  ada: { name: "Ada Lovelace", avatar: "/authors/ada.svg", email: "ada@goodoc.dev", affiliation: "goodoc", url: "https://…" },
+};
+```
+```markdown
+authors: [ada]                       # registry key
+# or inline:
+authors:
+  - { name: Guest, affiliation: Acme, email: g@acme.dev }
+```
+
+Avatars are images under `public/` (omit for a monogram fallback).
 
 ## Task: embed custom components in content (MDX)
 
@@ -186,7 +211,10 @@ locales: {
             note: { prefix, link: { label, href }, suffix },  // optional line under subhead
             media: { type: "image", src: "/hero.png", alt: "…" } },  // optional
     features: [
-      { title, body, image: "/features/landing.svg" },  // image optional
+      // media: image | video(+poster) | slot (component from feature-slots.tsx);
+      // href makes the whole card a link (locale-relative or external).
+      { title, body, image: "/features/landing.svg", href: "/docs/humanize/x/" },
+      { title, body, slot: "demo" },
     ],
     quickstart: {
       title, intro,
@@ -208,8 +236,13 @@ new tab. Style it with `note.style`: `variant` (`"text"` | `"pill"`), `tone`
 (`muted`/`soft`/`ink`/`accent`), `size` (`xs`/`sm`/`base`), or the escape hatches
 `className` / `linkClassName` (literal Tailwind strings for full control).
 
-Add a feature illustration by dropping an SVG/PNG in `public/features/` and
-referencing it as `image`. `hero.media` (optional) shows an image or video alongside the hero text. Pass
+A feature card's media is an `image` (SVG/PNG in `public/features/`), a `video`
+(+ `poster`), or a `slot` — a custom component registered in
+`lib/feature-slots.tsx` (user-owned, seeded on upgrade, same pattern as
+`hero-slots.tsx`). Add `href` to make the whole card a link (locale-relative
+internal, or external `https://…` in a new tab).
+
+`hero.media` (optional) shows an image or video alongside the hero text. Pass
 a single item **or an array** — arrays crossfade automatically every 4 s.
 
 `placement` (read from the first item) controls layout:

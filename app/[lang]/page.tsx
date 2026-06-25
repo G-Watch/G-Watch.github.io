@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fragment, type CSSProperties } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { HeroMedia } from "@/components/hero-media";
+import { featureSlots } from "@/lib/feature-slots";
 import { getSiteContent } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/content";
 import { getDictionary } from "@/lib/dictionaries";
@@ -198,40 +199,78 @@ export default async function HomePage({
         )}
       </section>
 
-      {/* Features (with optional illustration) */}
+      {/* Features (with optional illustration, custom slot, or link) */}
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <div className="grid gap-4 sm:grid-cols-2">
-          {features.map((feature) => (
-            <div key={feature.title} className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface">
-              {feature.video ? (
-                <video
-                  src={withBasePath(feature.video)}
-                  poster={feature.poster ? withBasePath(feature.poster) : undefined}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="h-44 w-full border-b border-line object-cover"
-                />
-              ) : feature.image ? (
-                // Plain <img>: the static export has no next/image optimizer.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={withBasePath(feature.image)}
-                  alt=""
-                  className="h-44 w-full border-b border-line object-cover"
-                />
-              ) : null}
-              <div className="p-7">
-                <h3 className="font-serif text-xl font-bold text-ink">
-                  {feature.title}
-                </h3>
-                <p className="mt-3 leading-relaxed text-ink-soft">
-                  {feature.body}
-                </p>
+          {features.map((feature) => {
+            const media = feature.slot ? (
+              featureSlots[feature.slot] ?? null
+            ) : feature.video ? (
+              <video
+                src={withBasePath(feature.video)}
+                poster={feature.poster ? withBasePath(feature.poster) : undefined}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-44 w-full border-b border-line object-cover"
+              />
+            ) : feature.image ? (
+              // Plain <img>: the static export has no next/image optimizer.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={withBasePath(feature.image)}
+                alt=""
+                className="h-44 w-full border-b border-line object-cover"
+              />
+            ) : null;
+
+            const inner = (
+              <>
+                {media}
+                <div className="p-7">
+                  <h3 className="font-serif text-xl font-bold text-ink transition-colors group-hover:text-accent">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 leading-relaxed text-ink-soft">
+                    {feature.body}
+                  </p>
+                </div>
+              </>
+            );
+
+            const base =
+              "flex flex-col overflow-hidden rounded-2xl border border-line bg-surface";
+
+            if (feature.href) {
+              const linkCls = `group ${base} transition-colors hover:border-accent`;
+              return feature.href.startsWith("http") ? (
+                <a
+                  key={feature.title}
+                  href={feature.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={linkCls}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <Link
+                  key={feature.title}
+                  href={localePath(lang, feature.href)}
+                  className={linkCls}
+                >
+                  {inner}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={feature.title} className={base}>
+                {inner}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

@@ -14,11 +14,15 @@
 // (placeholder chip auto-swaps for an <img>). Static (no hooks) → server
 // component.
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import { withBasePath } from "@/lib/paths";
+import { localePath, type Locale } from "@/lib/i18n";
 
 type Arch = {
   /** Button label. */
   label: string;
+  /** Platform key passed to the install wizard (?platform=…). */
+  platform: "cuda" | "rocm";
   /** Vendor name — used as the logo's alt text. */
   vendor: string;
   /** Short placeholder text shown in the logo chip until a real asset exists. */
@@ -30,8 +34,8 @@ type Arch = {
 };
 
 const ARCHES: Arch[] = [
-  { label: "CUDA", vendor: "NVIDIA", short: "NV", accent: "#76b900", logo: "/nvidia_logo.png" },
-  { label: "ROCm", vendor: "AMD", short: "AMD", accent: "#ed1c24", logo: "/amd_logo.png" },
+  { label: "CUDA", platform: "cuda", vendor: "NVIDIA", short: "NV", accent: "#76b900", logo: "/nvidia_logo.png" },
+  { label: "ROCm", platform: "rocm", vendor: "AMD", short: "AMD", accent: "#ed1c24", logo: "/amd_logo.png" },
 ];
 
 function Logo({ arch }: { arch: Arch }) {
@@ -61,9 +65,15 @@ function Logo({ arch }: { arch: Arch }) {
   );
 }
 
-function ArchButton({ arch }: { arch: Arch }) {
+function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
   return (
-    <div className="group relative">
+    <Link
+      href={localePath(
+        lang,
+        `/docs/humanize/installation/?platform=${arch.platform}`,
+      )}
+      aria-label={`Install G-Watch for ${arch.label}`}
+      className="group relative block">
       {/* Colored glow — fades in on hover. */}
       <div
         aria-hidden
@@ -122,11 +132,18 @@ function ArchButton({ arch }: { arch: Arch }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
-export function HeroArchButtons({ caption }: { caption: string }) {
+export function HeroArchButtons({
+  caption,
+  lang = "en",
+}: {
+  caption: string;
+  /** Locale used to build the install-wizard deep links. */
+  lang?: Locale;
+}) {
   return (
     // The flowing-light beam IS the border (see .beam-border in theme.css).
     // Caption lives inside the box, so no line sits behind it.
@@ -136,7 +153,7 @@ export function HeroArchButtons({ caption }: { caption: string }) {
       </p>
       <div className="flex w-fit flex-col gap-5">
         {ARCHES.map((arch) => (
-          <ArchButton key={arch.label} arch={arch} />
+          <ArchButton key={arch.label} arch={arch} lang={lang} />
         ))}
       </div>
     </div>

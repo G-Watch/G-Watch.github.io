@@ -117,8 +117,9 @@ body {
   content: "" !important;
 }
 
-/* Code blocks rendered by Shiki (github-light). */
-.prose-goodoc :where(pre) {
+/* Code blocks rendered by Shiki (github-light). Skips `.not-prose` subtrees
+   (embedded components like the install wizard style their own terminals). */
+.prose-goodoc :where(pre):not(:where(.not-prose, .not-prose *)) {
   background-color: #f6f2ea !important;
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
@@ -127,7 +128,7 @@ body {
   line-height: 1.6;
   overflow-x: auto;
 }
-.prose-goodoc :where(pre code) {
+.prose-goodoc :where(pre code):not(:where(.not-prose, .not-prose *)) {
   background: none;
   border: none;
   padding: 0;

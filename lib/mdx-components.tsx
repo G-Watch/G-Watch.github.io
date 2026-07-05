@@ -12,4 +12,6 @@
 //
 // Interactive components go in their own file with a "use client" directive.
 // Seeded by `npm run upgrade` when missing; never overwritten once it exists.
-export const mdxComponents = {};
+import { InstallWizard } from "@/components/install-wizard";
+
+export const mdxComponents = { InstallWizard };

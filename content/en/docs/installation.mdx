@@ -1,8 +1,80 @@
 ---
 title: Installation
-description: ""
+description: "Pick your platform and CUDA version to install G-Watch, or build it from source."
 group: Getting Started
 order: 2
 ---
 
-_Content coming soon._
+# Installation
+
+G-Watch ships as a Python package (`gwatch`) plus a set of agent skills. Pick your platform and toolkit version below to get the matching install command.
+
+<InstallWizard />
+
+## Build from source
+
+Set up a development environment with Conda on your host machine.
+
+1. **Clone the repository** (recursively, for submodules):
+
+   ```bash
+   git clone --recursive https://github.com/mars-compute-ai/G-Watch.git
+   cd G-Watch
+   ```
+
+2. **Create and activate a Conda environment.** The toolchain pin caps the resulting wheel at `manylinux_2_28`:
+
+   ```bash
+   conda create -n gw312 python=3.12 gcc_linux-64=10 gxx_linux-64=10 \
+       sysroot_linux-64=2.28 -c conda-forge
+   conda activate gw312
+   ```
+
+3. **Install system dependencies and build tools:**
+
+   ```bash
+   conda install -c conda-forge cmake make meson pkg-config unzip \
+       eigen elfutils libwebsockets libcurl openssl \
+       libdwarf libdwarf-dev zlib 'libsqlite=*=h0*' sqlite nlohmann_json \
+       pybind11_json pybind11
+   ```
+
+4. **Select the CUDA toolkit** (optional — defaults to the `nvcc` in your `PATH`):
+
+   ```bash
+   export GW_CUDA_HOME=/usr/local/cuda-12.8
+   ```
+
+5. **Build and install the wheel:**
+
+   ```bash
+   python3 setup.py bdist_wheel --buildtype=release
+   bash scripts/audit_wheel.sh ./dist/gwatch*.whl
+   pip3 install wheelhouse/*.whl
+   ```
+
+> Refer to the repository `README.md` for the most up-to-date build instructions and any platform-specific notes.
+
+## Verify
+
+Resolve the package and header paths used by the reference scripts:
+
+```bash
+# path to the gwatch package
+python3 -c "import gwatch; print(gwatch.__path__[0])"
+
+# path to the C++ headers (needed for CUDA C++ tracing)
+python3 -c "import gwatch; print(gwatch.get_include())"
+```
+
+A quick smoke test that CUPTI hooks are active:
+
+```python
+import gwatch.cuda.profile as gw_profile  # initializes the capsule + CUPTI hooks
+print("G-Watch ready")
+```
+
+## Next steps
+
+- [Intra-kernel tracing](/docs/humanize/intra-kernel-tracing/index/) — see the phase timeline inside a kernel.
+- [Counter-based profiling](/docs/humanize/intra-kernel-profiling/counter-based-profiling/) — your first diagnosis.

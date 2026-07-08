@@ -18,7 +18,7 @@ import type { Locale } from "@/lib/i18n";
  * NOTE: bump GWATCH_VERSION when publishing a new release (it feeds the
  * GitHub Release asset URLs below).
  */
-const GWATCH_VERSION = "0.0.29";
+const GWATCH_VERSION = "0.0.31";
 const RELEASE_BASE = `https://github.com/mars-compute-ai/G-Watch/releases/download/v${GWATCH_VERSION}`;
 const WHEEL_TAIL = "cp312-cp312-manylinux_2_28_x86_64.whl";
 const CONTACT_EMAIL = "gwatch.dev.team@gmail.com";

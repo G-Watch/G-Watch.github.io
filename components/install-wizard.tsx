@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 
 /**
- * PyTorch-style install selector: pick a platform (CUDA / ROCm) and a CUDA
- * toolkit version, get the matching install command.
+ * PyTorch-style install selector: pick a G-Watch version, a platform
+ * (CUDA / ROCm) and a CUDA toolkit version, get the matching install command.
  *
  * The CUDA 12.8 wheel (no +cu local tag) lives on PyPI; wheels for the other
  * CUDA versions are attached to the GitHub Release of the same version. ROCm
@@ -15,11 +15,14 @@ import type { Locale } from "@/lib/i18n";
  * lib/mdx-components.tsx) and deep-linked from the hero arch buttons with
  * ?platform=cuda|rocm.
  *
- * NOTE: bump GWATCH_VERSION when publishing a new release (it feeds the
- * GitHub Release asset URLs below).
+ * NOTE: when publishing a new release, prepend its version to GWATCH_VERSIONS
+ * (index 0 is treated as "latest", i.e. what `pip3 install gwatch` resolves
+ * to, and feeds the GitHub Release asset URLs below).
  */
-const GWATCH_VERSION = "0.0.31";
-const RELEASE_BASE = `https://github.com/mars-compute-ai/G-Watch/releases/download/v${GWATCH_VERSION}`;
+const GWATCH_VERSIONS = ["0.0.31"] as const;
+const LATEST_VERSION = GWATCH_VERSIONS[0];
+const releaseBase = (version: string) =>
+  `https://github.com/mars-compute-ai/G-Watch/releases/download/v${version}`;
 const WHEEL_TAIL = "cp312-cp312-manylinux_2_28_x86_64.whl";
 const CONTACT_EMAIL = "gwatch.dev.team@gmail.com";
 
@@ -29,9 +32,11 @@ const CUDA_VERSIONS = ["12.8", "12.9", "13.0", "13.1", "13.2", "13.3"] as const;
 
 type Platform = "cuda" | "rocm";
 type CudaVersion = (typeof CUDA_VERSIONS)[number];
+type GwatchVersion = (typeof GWATCH_VERSIONS)[number];
 
 const STRINGS = {
   en: {
+    gwatchVersion: "G-Watch version",
     platform: "Platform",
     cudaVersion: "CUDA version",
     installGwatch: "Install gwatch",
@@ -39,9 +44,11 @@ const STRINGS = {
     copy: "Copy",
     copied: "Copied!",
     defaultBadge: "default",
-    pypiNote: `Installs the latest gwatch from PyPI (built against CUDA ${DEFAULT_CUDA}).`,
-    ghNote: (cu: string) =>
-      `Installs the CUDA ${cu} wheel from the v${GWATCH_VERSION} GitHub Release.`,
+    latestBadge: "latest",
+    pypiNote: (v: string) =>
+      `Installs gwatch ${v} from PyPI (built against CUDA ${DEFAULT_CUDA}).`,
+    ghNote: (cu: string, v: string) =>
+      `Installs the CUDA ${cu} wheel from the v${v} GitHub Release.`,
     py312Note:
       "Prebuilt wheels target Python 3.12 on x86_64 Linux (manylinux_2_28).",
     rocmTitle: "ROCm wheels are available on request",
@@ -50,6 +57,7 @@ const STRINGS = {
     rocmCta: "Contact us",
   },
   zh: {
+    gwatchVersion: "G-Watch 版本",
     platform: "平台",
     cudaVersion: "CUDA 版本",
     installGwatch: "安装 gwatch",
@@ -57,9 +65,11 @@ const STRINGS = {
     copy: "复制",
     copied: "已复制!",
     defaultBadge: "默认",
-    pypiNote: `从 PyPI 安装最新版 gwatch(基于 CUDA ${DEFAULT_CUDA} 构建)。`,
-    ghNote: (cu: string) =>
-      `从 v${GWATCH_VERSION} GitHub Release 安装 CUDA ${cu} 对应的 wheel。`,
+    latestBadge: "最新",
+    pypiNote: (v: string) =>
+      `从 PyPI 安装 gwatch ${v}(基于 CUDA ${DEFAULT_CUDA} 构建)。`,
+    ghNote: (cu: string, v: string) =>
+      `从 v${v} GitHub Release 安装 CUDA ${cu} 对应的 wheel。`,
     py312Note:
       "预编译 wheel 面向 x86_64 Linux 上的 Python 3.12(manylinux_2_28)。",
     rocmTitle: "ROCm wheel 需联系我们获取",
@@ -71,10 +81,17 @@ const STRINGS = {
 
 const SKILLS_COMMAND = "npx skills add mars-compute-ai/G-Watch -g";
 
-function gwatchCommandFor(cuda: CudaVersion): string {
-  return cuda === DEFAULT_CUDA
-    ? "pip3 install gwatch"
-    : `pip3 install ${RELEASE_BASE}/gwatch-${GWATCH_VERSION}+cu${cuda.replace(".", "")}-${WHEEL_TAIL}`;
+function gwatchCommandFor(cuda: CudaVersion, version: GwatchVersion): string {
+  if (cuda === DEFAULT_CUDA) {
+    // the default-CUDA wheel is on PyPI; pin the version unless it's the latest
+    return version === LATEST_VERSION
+      ? "pip3 install gwatch"
+      : `pip3 install gwatch==${version}`;
+  }
+  return `pip3 install ${releaseBase(version)}/gwatch-${version}+cu${cuda.replace(
+    ".",
+    "",
+  )}-${WHEEL_TAIL}`;
 }
 
 function OptionButton({
@@ -156,6 +173,7 @@ function CommandBlock({
 
 export function InstallWizard({ lang }: { lang?: Locale }) {
   const [locale, setLocale] = useState<Locale>(lang ?? "en");
+  const [version, setVersion] = useState<GwatchVersion>(LATEST_VERSION);
   const [platform, setPlatform] = useState<Platform>("cuda");
   const [cuda, setCuda] = useState<CudaVersion>(DEFAULT_CUDA);
 
@@ -181,6 +199,23 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
 
   return (
     <div className="not-prose my-8 overflow-hidden rounded-2xl border border-line bg-surface">
+      {/* G-Watch version row */}
+      <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
+        <p className="font-mono text-xs text-muted">{t.gwatchVersion}</p>
+        <div className="flex flex-wrap gap-2">
+          {GWATCH_VERSIONS.map((v) => (
+            <OptionButton key={v} active={version === v} onClick={() => setVersion(v)}>
+              {v}
+              {v === LATEST_VERSION && (
+                <span className="ml-1.5 rounded bg-accent/15 px-1 py-0.5 text-[0.7em]">
+                  {t.latestBadge}
+                </span>
+              )}
+            </OptionButton>
+          ))}
+        </div>
+      </div>
+
       {/* Platform row */}
       <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
         <p className="font-mono text-xs text-muted">{t.platform}</p>
@@ -218,7 +253,7 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
         <div className="space-y-5 p-5">
           <CommandBlock
             label={t.installGwatch}
-            command={gwatchCommandFor(cuda)}
+            command={gwatchCommandFor(cuda, version)}
             copyLabel={t.copy}
             copiedLabel={t.copied}
           />
@@ -229,7 +264,8 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
             copiedLabel={t.copied}
           />
           <p className="text-xs leading-relaxed text-muted">
-            {cuda === DEFAULT_CUDA ? t.pypiNote : t.ghNote(cuda)} {t.py312Note}
+            {cuda === DEFAULT_CUDA ? t.pypiNote(version) : t.ghNote(cuda, version)}{" "}
+            {t.py312Note}
           </p>
         </div>
       ) : (

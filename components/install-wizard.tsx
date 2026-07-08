@@ -277,7 +277,9 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-4">
               <a
-                href={`mailto:${CONTACT_EMAIL}?subject=G-Watch%20ROCm%20wheel%20request`}
+                href="https://mars-compute.com/#contact"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-paper shadow-paper transition-colors hover:bg-accent-strong"
               >
                 {t.rocmCta}

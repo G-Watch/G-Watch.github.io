@@ -19,7 +19,7 @@ import type { Locale } from "@/lib/i18n";
  * (index 0 is treated as "latest", i.e. what `pip3 install gwatch` resolves
  * to, and feeds the GitHub Release asset URLs below).
  */
-const GWATCH_VERSIONS = ["0.0.31"] as const;
+const GWATCH_VERSIONS = ["0.0.32", "0.0.31"] as const;
 const LATEST_VERSION = GWATCH_VERSIONS[0];
 const releaseBase = (version: string) =>
   `https://github.com/mars-compute-ai/G-Watch/releases/download/v${version}`;

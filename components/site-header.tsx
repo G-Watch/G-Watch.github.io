@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { siteConfig, getSiteContent } from "@/lib/site-config";
+import { navIcons } from "@/lib/nav-icons";
 import { localePath, type Locale } from "@/lib/i18n";
 import { LanguageSwitcher } from "./language-switcher";
 import { Brand } from "./brand";
@@ -36,10 +37,13 @@ export function SiteHeader({ lang }: { lang: Locale }) {
               <Link
                 key={link.href}
                 href={href}
-                className={`text-sm transition-colors hover:text-accent ${
-                  isActive(pathname, href) ? "text-accent" : "text-ink-soft"
+                className={`inline-flex items-center gap-1.5 text-sm transition-colors hover:text-accent ${
+                  isActive(pathname, href)
+                    ? "font-bold text-accent-strong"
+                    : "text-ink-soft"
                 }`}
               >
+                {link.icon && navIcons[link.icon]}
                 {link.label}
               </Link>
             );
@@ -75,8 +79,9 @@ export function SiteHeader({ lang }: { lang: Locale }) {
               key={link.href}
               href={localePath(lang, link.href)}
               onClick={() => setOpen(false)}
-              className="rounded-md px-2 py-2 text-sm text-ink-soft hover:bg-paper-deep"
+              className="flex items-center gap-1.5 rounded-md px-2 py-2 text-sm text-ink-soft hover:bg-paper-deep"
             >
+              {link.icon && navIcons[link.icon]}
               {link.label}
             </Link>
           ))}

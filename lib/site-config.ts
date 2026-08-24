@@ -10,6 +10,8 @@ import type { Locale } from "./i18n";
 export interface NavLink {
   label: string;
   href: string;
+  /** Key into the navIcons registry in lib/nav-icons.tsx; shown before the label. */
+  icon?: string;
 }
 
 /**
@@ -117,6 +119,12 @@ export interface LocaleContent {
   /** Nav labels are localized; hrefs stay locale-relative ("/docs/"). */
   nav: NavLink[];
   footerNote: string;
+  /** Sentence under footerNote, with one inline link (e.g. the owning org). */
+  footerAttribution?: {
+    prefix?: string;
+    link?: { label: string; href: string };
+    suffix?: string;
+  };
 }
 
 export interface Brand {
@@ -149,7 +157,9 @@ export const siteConfig: SiteConfig = {
   name: "G-Watch",
   brand: { mode: "name-only" },
   repo: "https://github.com/mars-compute-ai/G-Watch",
-  social: [{ label: "GitHub", href: "https://github.com/mars-compute-ai/G-Watch" }],
+  social: [
+    { label: "GitHub", href: "https://github.com/mars-compute-ai/G-Watch" },
+  ],
 
   projectName: "G-Watch",
   duration: "2024 – 2026",
@@ -164,25 +174,33 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "See inside your GPU kernels",
         subhead:
-          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring intra-kernel tracing (iket) & profiling, SASS binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
+          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring intra-kernel tracing (Xtrace) & profiling, SASS binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
         primaryCta: { label: "Read the docs", href: "/docs/" },
-        secondaryCta: { label: "Quickstart", href: "/docs/humanize/installation/" },
-        media: { type: "custom", slot: "arch", placement: "overlap", layout: { textRatio: 1.3 } },
+        secondaryCta: {
+          label: "Quickstart",
+          href: "/docs/humanize/installation/",
+        },
+        media: {
+          type: "custom",
+          slot: "arch",
+          placement: "overlap",
+          layout: { textRatio: 1.3 },
+        },
         note: {
           prefix: "G-Watch is an open-source project under ",
           link: { label: "Mars Compute", href: "https://mars-compute.com/" },
           suffix: ".",
           style: {
             size: "base",
-            className: "text-red-600! font-bold text-lg! italic",
+            className: "text-accent! font-bold",
             linkClassName:
-              "font-bold text-red-600 underline decoration-2 underline-offset-4 hover:text-red-700 hover:decoration-red-700",
+              "font-bold text-accent-strong underline decoration-2 underline-offset-4 hover:decoration-accent",
           },
         },
       },
       features: [
         {
-          title: "Intra-kernel Tracing (iket)",
+          title: "Intra-kernel Tracing (Xtrace)",
           body: "See the phase timeline inside a single kernel: load, compute, epilogue, and the bubbles between them. Mark scopes in CUDA, TileLang, CuTeDSL, or Triton, then read the trace as a human report or an agent view.",
           slot: "iket-views",
           href: "/docs/humanize/intra-kernel-tracing/index/",
@@ -227,10 +245,21 @@ export const siteConfig: SiteConfig = {
         note: "G-Watch supports NVIDIA and AMD GPUs and Google TPUs. See the docs for per-platform setup.",
       },
       nav: [
+        {
+          label: "Open Traces",
+          href: "/open-traces/",
+          icon: "view-object-track",
+        },
         { label: "Docs", href: "/docs/" },
         { label: "Blog", href: "/blog/" },
       ],
-      footerNote: "Profiling and program analysis for agentic GPU/TPU kernel optimization.",
+      footerNote:
+        "Profiling and program analysis for agentic GPU/TPU kernel optimization.",
+      footerAttribution: {
+        prefix: "G-Watch is an open-source project under ",
+        link: { label: "Mars Compute", href: "https://mars-compute.com/" },
+        suffix: ".",
+      },
     },
 
     zh: {
@@ -241,25 +270,33 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "细粒度分析 GPU Kernel",
         subhead:
-          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含内核级追踪 (iket)、SASS 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
+          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含内核级追踪 (Xtrace)、SASS 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
         primaryCta: { label: "阅读文档", href: "/docs/" },
-        secondaryCta: { label: "快速开始", href: "/docs/humanize/installation/" },
-        media: { type: "custom", slot: "archZh", placement: "overlap", layout: { textRatio: 1.3 } },
+        secondaryCta: {
+          label: "快速开始",
+          href: "/docs/humanize/installation/",
+        },
+        media: {
+          type: "custom",
+          slot: "archZh",
+          placement: "overlap",
+          layout: { textRatio: 1.3 },
+        },
         note: {
           prefix: "G-Watch 是 ",
           link: { label: "Mars Compute", href: "https://mars-compute.com/" },
           suffix: " 旗下的开源项目。",
           style: {
             size: "base",
-            className: "text-red-600! font-bold text-lg! italic",
+            className: "text-accent! font-bold",
             linkClassName:
-              "font-bold text-red-600 underline decoration-2 underline-offset-4 hover:text-red-700 hover:decoration-red-700",
+              "font-bold text-accent-strong underline decoration-2 underline-offset-4 hover:decoration-accent",
           },
         },
       },
       features: [
         {
-          title: "内核级追踪 (iket)",
+          title: "内核级追踪 (Xtrace)",
           body: "看清单次 kernel 内部的 phase 时间线：load、compute、epilogue，以及它们之间的气泡。在 CUDA、TileLang、CuTeDSL 或 Triton 里打 scope，然后以人类报告或 agent 视图查看追踪结果。",
           slot: "iket-views",
           href: "/docs/humanize/intra-kernel-tracing/index/",
@@ -303,10 +340,20 @@ export const siteConfig: SiteConfig = {
         note: "G-Watch 支持 NVIDIA、AMD GPU 与 Google TPU。各平台的具体配置见文档。",
       },
       nav: [
+        {
+          label: "Open Traces",
+          href: "/open-traces/",
+          icon: "view-object-track",
+        },
         { label: "文档", href: "/docs/" },
         { label: "博客", href: "/blog/" },
       ],
       footerNote: "为面向智能体的 GPU/TPU kernel 优化提供性能剖析与程序分析。",
+      footerAttribution: {
+        prefix: "G-Watch 是 ",
+        link: { label: "Mars Compute", href: "https://mars-compute.com/" },
+        suffix: " 旗下的开源项目。",
+      },
     },
   },
 };

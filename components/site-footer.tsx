@@ -13,6 +13,30 @@ export function SiteFooter({ lang }: { lang: Locale }) {
         <div>
           <Brand size="sm" />
           <p className="mt-1 text-sm text-muted">{content.footerNote}</p>
+          {content.footerAttribution && (
+            <p className="mt-1 text-sm text-muted">
+              {content.footerAttribution.prefix}
+              {content.footerAttribution.link &&
+                (/^https?:\/\//.test(content.footerAttribution.link.href) ? (
+                  <a
+                    href={content.footerAttribution.link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-muted underline underline-offset-2 transition-colors hover:text-ink-soft"
+                  >
+                    {content.footerAttribution.link.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={localePath(lang, content.footerAttribution.link.href)}
+                    className="text-muted underline underline-offset-2 transition-colors hover:text-ink-soft"
+                  >
+                    {content.footerAttribution.link.label}
+                  </Link>
+                ))}
+              {content.footerAttribution.suffix}
+            </p>
+          )}
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
           {content.nav.map((link) => (

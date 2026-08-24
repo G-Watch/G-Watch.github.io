@@ -43,8 +43,8 @@ body {
   --tw-prose-quote-borders: var(--color-accent);
   --tw-prose-captions: var(--color-muted);
   --tw-prose-code: var(--color-ink);
-  --tw-prose-pre-code: #2b2925;
-  --tw-prose-pre-bg: #f6f2ea;
+  --tw-prose-pre-code: var(--color-ink);
+  --tw-prose-pre-bg: var(--color-paper-deep);
   --tw-prose-th-borders: var(--color-line);
   --tw-prose-td-borders: var(--color-line-soft);
 
@@ -120,7 +120,7 @@ body {
 /* Code blocks rendered by Shiki (github-light). Skips `.not-prose` subtrees
    (embedded components like the install wizard style their own terminals). */
 .prose-goodoc :where(pre):not(:where(.not-prose, .not-prose *)) {
-  background-color: #f6f2ea !important;
+  background-color: var(--color-paper-deep) !important;
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
   padding: 1rem 1.2rem;
@@ -162,7 +162,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.7;
-  color: #1c1b19;
+  color: #0f1113;
 }
 .agent-doc :where(h1, h2, h3, h4, h5, h6) {
   font-family: var(--font-mono);
@@ -175,17 +175,17 @@ body {
 .agent-doc :where(h3) { font-size: 1.1rem; }
 .agent-doc :where(p, ul, ol, blockquote, pre, table) { margin: 0.9em 0; }
 .agent-doc :where(ul, ol) { padding-left: 1.5em; }
-.agent-doc :where(a) { color: #1a4d8f; text-decoration: underline; }
+.agent-doc :where(a) { color: #2b3138; text-decoration: underline; }
 .agent-doc :where(pre) {
-  background: #f5f5f3;
-  border: 1px solid #ddd;
+  background: #f5f6f7;
+  border: 1px solid #dcdfe3;
   border-radius: 6px;
   padding: 0.9rem 1.1rem;
   overflow-x: auto;
   font-size: 0.85rem;
 }
 .agent-doc :where(code):not(pre code) {
-  background: #f0efec;
+  background: #f0f1f3;
   border-radius: 4px;
   padding: 0.1em 0.35em;
   font-size: 0.88em;
@@ -193,7 +193,7 @@ body {
 .agent-doc :where(img) {
   max-width: 100%;
   height: auto;
-  border: 1px solid #ddd;
+  border: 1px solid #dcdfe3;
 }
 .agent-doc :where(table) {
   border-collapse: collapse;

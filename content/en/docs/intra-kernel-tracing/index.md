@@ -4,7 +4,7 @@ description: Trace the internal phase timeline of a single GPU kernel across CUD
 order: 10
 ---
 
-Intra-kernel Tracing (Iket) reveals the temporal behavior inside a single kernel
+Intra-kernel Tracing (Xtrace) reveals the temporal behavior inside a single kernel
 invocation: when each phase runs and how they overlap. It exposes pipeline
 bubbles, synchronization overhead, and warp-role scheduling that aggregate
 metrics miss. You add device-side scope markers, run the kernel under G-Watch,

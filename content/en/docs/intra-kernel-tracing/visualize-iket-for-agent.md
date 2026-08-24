@@ -1,5 +1,5 @@
 ---
-title: Visualize Iket for Agent
+title: Visualize Xtrace for Agent
 description: Render an intra-kernel trace as compact text that an LLM agent can read, with gwatch show.
 order: 12
 ---

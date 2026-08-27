@@ -71,208 +71,22 @@ export interface TraceRecord {
    */
   trace?: string;
 }
-
 /**
- * MOCK DATA — a cuDNN catalog used to exercise the browser until the real
- * records arrive. `href` is deliberately unset everywhere: the trace itself is
- * not rendered yet, so every row shows an empty trace cell.
+ * The captured trace records. Every entry is a real G-Watch capture; the panel
+ * JSON each `trace` points at lives under public/traces/.
  */
-const MOCK_TRACE_RECORDS: TraceRecord[] = [
-  // cuDNN v9.0 · sm90a · fused multi-head attention
+const TRACE_RECORDS: TraceRecord[] = [
+  // cuBLAS 12.8 · sm90a · nvjet fp16 GEMM, driven directly through cublasGemmEx
   {
     vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
+    software: "cuBLAS",
+    version: "12.8",
     arch: "sm90a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 2, h: 8, s: 1024, d: 64, precision: "fp16", layout: "BSHD" },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-    trace: "/traces/cudnn-fused-mha-fprop-b2h8s1024d64.json",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 4, h: 16, s: 2048, d: 64, precision: "fp16", layout: "BSHD" },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 1, h: 32, s: 4096, d: 128, precision: "bf16", layout: "BSHD" },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "cudnn_fused_mha_bprop",
-    params: { b: 2, h: 8, s: 1024, d: 64, precision: "fp16", layout: "BSHD" },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-  },
-  // cuDNN v9.0 · sm90a · implicit-GEMM convolution
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "sm90_xmma_fprop_implicit_gemm_f16f16_f16f32_nhwc",
-    params: {
-      n: 32,
-      c: 256,
-      h: 56,
-      w: 56,
-      k: 256,
-      r: 3,
-      s: 3,
-      precision: "fp16",
-      layout: "NHWC",
-    },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "sm90_xmma_fprop_implicit_gemm_f16f16_f16f32_nhwc",
-    params: {
-      n: 64,
-      c: 512,
-      h: 28,
-      w: 28,
-      k: 512,
-      r: 1,
-      s: 1,
-      precision: "fp16",
-      layout: "NHWC",
-    },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.29",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "sm90_xmma_dgrad_implicit_gemm_f16f16_f16f32_nhwc",
-    params: {
-      n: 32,
-      c: 256,
-      h: 56,
-      w: 56,
-      k: 256,
-      r: 3,
-      s: 3,
-      precision: "fp16",
-      layout: "NHWC",
-    },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.30",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm90a",
-    kernel: "cudnn_batchnorm_fwd_training_nhwc",
-    params: { n: 64, c: 256, h: 56, w: 56, precision: "fp16", layout: "NHWC" },
-    meta: { GPU: "H100 SXM" },
-    gwatchVersion: "0.0.30",
-  },
-  // cuDNN v9.0 · sm89 (Ada)
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm89",
-    kernel: "sm89_xmma_fprop_implicit_gemm_f16f16_f16f32_nhwc",
-    params: {
-      n: 32,
-      c: 256,
-      h: 56,
-      w: 56,
-      k: 256,
-      r: 3,
-      s: 3,
-      precision: "fp16",
-      layout: "NHWC",
-    },
-    meta: { GPU: "L40S" },
-    gwatchVersion: "0.0.30",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.0",
-    arch: "sm89",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 2, h: 8, s: 1024, d: 64, precision: "fp16", layout: "BSHD" },
-    meta: { GPU: "L40S" },
-    gwatchVersion: "0.0.30",
-  },
-  // cuDNN v9.2 · sm100a (Blackwell)
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.2",
-    arch: "sm100a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 2, h: 8, s: 1024, d: 64, precision: "fp8", layout: "BSHD" },
-    meta: { GPU: "B200" },
-    gwatchVersion: "0.0.31",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.2",
-    arch: "sm100a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 4, h: 16, s: 2048, d: 128, precision: "fp8", layout: "BSHD" },
-    meta: { GPU: "B200" },
-    gwatchVersion: "0.0.31",
-  },
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.2",
-    arch: "sm100a",
-    kernel: "sm100_xmma_fprop_implicit_gemm_f16f16_f16f32_nhwc",
-    params: {
-      n: 32,
-      c: 256,
-      h: 56,
-      w: 56,
-      k: 256,
-      r: 3,
-      s: 3,
-      precision: "fp16",
-      layout: "NHWC",
-    },
-    meta: { GPU: "B200" },
-    gwatchVersion: "0.0.31",
-  },
-  // cuDNN v9.2 · sm90a
-  {
-    vendor: "NVIDIA",
-    software: "cuDNN",
-    version: "v9.2",
-    arch: "sm90a",
-    kernel: "cudnn_fused_mha_fprop",
-    params: { b: 2, h: 8, s: 1024, d: 64, precision: "fp16", layout: "BSHD" },
-    meta: { GPU: "H100 SXM" },
+    kernel: "nvjet_hsh_64x48_64x15_2x4_v_bz_NNT",
+    params: { api: "cublasGemmEx", m: 512, n: 512, k: 512, precision: "fp16", layout: "NN" },
+    meta: { GPU: "H100 80GB HBM3" },
     gwatchVersion: "0.0.33",
+    trace: "/traces/cublas-nvjet-hsh-64x48-m512n512k512-fp16-nn.json",
   },
 ];
 
@@ -293,11 +107,10 @@ const MOCK_TRACE_RECORDS: TraceRecord[] = [
  *     gwatchVersion: "0.0.31",
  *   }
  *
- * Mock catalog — replace with the real records. `getTraceCatalog()` below is
- * the single seam the renderer reads through, so swapping this for a fetched
- * or build-time-loaded JSON touches nothing else.
+ * `getTraceCatalog()` below is the single seam the renderer reads through, so
+ * swapping this for a fetched or build-time-loaded JSON touches nothing else.
  */
-export const openTraceRecords: TraceRecord[] = MOCK_TRACE_RECORDS;
+export const openTraceRecords: TraceRecord[] = TRACE_RECORDS;
 
 /**
  * The catalog the page renders. THE ONE PLACE the data source is chosen.

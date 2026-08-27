@@ -7,10 +7,15 @@
  * already paired into intervals, time rebased to 0, threads optionally sampled.
  */
 
-/** A named phase inside the kernel; each gets its own hatch. */
+/**
+ * A named phase inside the kernel; each gets its own ink. `role` names the warp
+ * role that executes the phase (math warpgroup, producer, scheduler, ...) — the
+ * roles are per-kernel data, and the legend groups scopes under them.
+ */
 export interface TraceScope {
   id: number;
   label: string;
+  role?: string;
 }
 
 /** One traced thread, and the hardware groupings it rolls up into. */

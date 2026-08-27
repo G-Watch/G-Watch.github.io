@@ -29,7 +29,11 @@ def main():
     ap.add_argument("--stride", type=int, default=32,
                     help="keep every Nth global thread id")
     ap.add_argument("--kernel", default=None, help="override the kernel name")
+    ap.add_argument("--roles", default=None,
+                    help="JSON object mapping scope labels to warp-role names, "
+                         "carried into each scope for the legend's role groups")
     args = ap.parse_args()
+    roles = json.loads(args.roles) if args.roles else {}
 
     with open(args.report, encoding="utf8") as fh:
         report = json.load(fh)
@@ -123,7 +127,10 @@ def main():
         "sampledEvery": args.stride,
         "laneRepeat": lane_repeat,
         "totalThreads": analysis["n_threads"],
-        "scopes": [{"id": sid, "label": label} for sid, label in sorted(scopes.items())],
+        "scopes": [
+            {"id": sid, "label": label, **({"role": roles[label]} if label in roles else {})}
+            for sid, label in sorted(scopes.items())
+        ],
         "lanes": lanes,
         "intervals": intervals,
     }

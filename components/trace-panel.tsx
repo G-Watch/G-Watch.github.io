@@ -14,11 +14,10 @@ import {
 /**
  * Intra-kernel trace panel: time on x, threads/warps/warpgroups on y.
  *
- * Rendered as a radiograph rather than a chart. A phase is exposure, not a
- * texture: each scope carries a fixed density, intervals are composited
- * additively, and wherever many lanes collapse into one row the accumulated
- * light is the density of work there. Bubbles stay at film black. That is what
- * makes a crowded region read as a smooth bright field instead of moiré.
+ * Rendered as a chromatic print rather than a chart. Each scope carries one ink
+ * from a fixed validated palette; intervals are composited multiplicatively, so
+ * overlapping phases mix the way layered inks do and a crowded row saturates
+ * toward its scope's hue. Bubbles stay at paper white.
  *
  * Vertical granularity follows the zoom: rows live in a normalised lane space,
  * so zooming in hands each row more pixels, and the finest level whose rows
@@ -35,13 +34,58 @@ const GRID = "rgba(21,24,27,0.06)";
 const TICK = "#6b7278";
 const EDGE = "rgba(21,24,27,0.16)";
 
-/** Absorption per scope: a spread of densities, faintest scope first. */
-function density(index: number, count: number): number {
-  if (count <= 1) return 1;
-  return 0.34 + (0.66 * index) / (count - 1);
-}
+/**
+ * Scope inks, assigned by scope order and never cycled: an artisanal print
+ * palette validated for adjacent-pair CVD separation and >= 3:1 contrast on the
+ * film surface. Scopes past the palette fold into neutral ink.
+ */
+const SCOPE_INKS: [number, number, number][] = [
+  [13, 132, 166], // teal
+  [192, 74, 44], // brick
+  [77, 84, 184], // indigo
+  [176, 128, 26], // ochre
+  [0, 121, 90], // pine
+  [192, 90, 155], // plum
+  [125, 138, 31], // olive
+];
+const NEUTRAL_INK: [number, number, number] = [107, 114, 120];
 
-const inkAt = (alpha: number) => `rgba(21,24,27,${alpha.toFixed(3)})`;
+const scopeRgb = (index: number) => SCOPE_INKS[index] ?? NEUTRAL_INK;
+
+/** Exposure density: identity lives in the hue, so every scope prints equally. */
+const DENSITY = 0.82;
+
+const inkAt = (index: number, alpha: number) => {
+  const [r, g, b] = scopeRgb(index);
+  return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+};
+
+const legendInk = (index: number) => {
+  const [r, g, b] = scopeRgb(index);
+  return `rgb(${r},${g},${b})`;
+};
+
+/**
+ * Legend groups: consecutive-by-first-appearance buckets of scopes sharing a
+ * warp role. The scope's palette index is carried so grouping never recolors.
+ */
+function groupScopesByRole(scopes: TraceData["scopes"]) {
+  const groups: {
+    role?: string;
+    entries: { scope: TraceData["scopes"][number]; index: number }[];
+  }[] = [];
+  const byRole = new Map<string | undefined, number>();
+  scopes.forEach((scope, index) => {
+    let at = byRole.get(scope.role);
+    if (at === undefined) {
+      at = groups.length;
+      byRole.set(scope.role, at);
+      groups.push({ role: scope.role, entries: [] });
+    }
+    groups[at].entries.push({ scope, index });
+  });
+  return groups;
+}
 
 // The measurement layer — cursor, selection, hover — is the one place colour is
 // allowed: the exposure stays greyscale, the tools sit on top of it.
@@ -83,9 +127,20 @@ function makeGrain(): HTMLCanvasElement {
 export function TracePanel({ data }: { data: TraceData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLCanvasElement | null>(null);
+  const scopeLayerRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const grainRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
   const [view, setView] = useState<View>({
     t0: 0,
     t1: data.span,
@@ -95,6 +150,8 @@ export function TracePanel({ data }: { data: TraceData }) {
   const [selection, setSelection] = useState<{ a: number; b: number } | null>(
     null,
   );
+  // Lane selection in normalised [0,1] lane space, zoom-independent like time.
+  const [laneSel, setLaneSel] = useState<{ a: number; b: number } | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hover, setHover] = useState<{
     x: number;
@@ -108,6 +165,7 @@ export function TracePanel({ data }: { data: TraceData }) {
   const drag = useRef<
     | { kind: "pan"; x: number; y: number; view: View }
     | { kind: "select"; from: number }
+    | { kind: "vselect"; from: number }
     | null
   >(null);
 
@@ -120,6 +178,17 @@ export function TracePanel({ data }: { data: TraceData }) {
 
   const plotH = Math.max(0, size.h - AXIS_H - PAD_TOP);
   const plotW = Math.max(0, size.w - AXIS_W);
+
+  // Intervals bucketed by scope, so the draw makes one print pass per scope.
+  const intervalsByScope = useMemo(() => {
+    const buckets = new Map<number, TraceData["intervals"]>();
+    for (const interval of data.intervals) {
+      const bucket = buckets.get(interval[1]);
+      if (bucket) bucket.push(interval);
+      else buckets.set(interval[1], [interval]);
+    }
+    return buckets;
+  }, [data]);
 
   // The finest level whose rows still clear MIN_ROW_PX at this zoom.
   const rows = useMemo(() => {
@@ -202,18 +271,26 @@ export function TracePanel({ data }: { data: TraceData }) {
       lc.lineTo(x, PAD_TOP + plotH);
     }
     lc.stroke();
-    // Absorption stacks: two overlapping intervals transmit the product of
-    // their densities, so a crowded row goes dark the way thick material does.
-    lc.globalCompositeOperation = "multiply";
+    // One print pass per scope: the scope's intervals accumulate translucent
+    // SAME-HUE ink on a scratch layer (self-overlap deepens, never shifts hue,
+    // so a folded row reads as coverage in the legend's own colour), then the
+    // whole pass composites multiplicatively — only different scopes mix inks.
+    let scopeLayer = scopeLayerRef.current;
+    if (!scopeLayer) {
+      scopeLayer = document.createElement("canvas");
+      scopeLayerRef.current = scopeLayer;
+    }
+    scopeLayer.width = canvas.width;
+    scopeLayer.height = canvas.height;
+    const sc = scopeLayer.getContext("2d");
+    if (!sc) return;
+    sc.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Exposure normalisation: at coarse levels many lanes land on one row and
-    // additive light would blow out. Dividing by that fold makes a fully
-    // covered row reach exactly its scope's density, so brightness reads as
-    // "how much of this group is in this phase" instead of saturating.
+    // Exposure normalisation: at coarse levels many lanes land on one row; the
+    // per-interval alpha makes a fully folded row saturate to the pure hue,
+    // and the pass alpha sets the scope's print density.
     const fold = Math.max(1, data.lanes.length / rows.count);
-    const alphas = data.scopes.map(
-      (_, i) => (density(i, data.scopes.length) / fold) * 1.25,
-    );
+    const stampAlpha = Math.min(1, 1.25 / fold);
     const scopeIndex = new Map(data.scopes.map((s, i) => [s.id, i]));
     const bandH = rowH * rows.span;
     const barH = bandH > 4 ? bandH - 1 : bandH;
@@ -222,20 +299,29 @@ export function TracePanel({ data }: { data: TraceData }) {
     const left = AXIS_W;
     const right = AXIS_W + plotW;
 
-    for (const [lane, scope, start, dur] of data.intervals) {
-      if (start > t1 || start + dur < t0) continue;
-      const row = rows.rowOf[lane];
-      if (row < firstRow || row > lastRow) continue;
-      const x = xOf(start);
-      const w = Math.max(0.5, (dur / tSpan) * plotW);
-      if (x > right || x + w < left) continue;
-      const y = yOf(row);
-      if (y + barH < PAD_TOP || y > PAD_TOP + plotH) continue;
-      const clippedX = Math.max(x, left);
-      const clippedW = Math.min(x + w, right) - clippedX;
-      lc.fillStyle = inkAt(alphas[scopeIndex.get(scope) ?? 0]);
-      lc.fillRect(clippedX, y, clippedW, Math.max(0.7, barH));
+    for (const [scopeId, list] of intervalsByScope) {
+      const si = scopeIndex.get(scopeId) ?? 0;
+      sc.clearRect(0, 0, size.w, size.h);
+      sc.fillStyle = inkAt(si, stampAlpha);
+      for (const [lane, , start, dur] of list) {
+        if (start > t1 || start + dur < t0) continue;
+        const row = rows.rowOf[lane];
+        if (row < firstRow || row > lastRow) continue;
+        const x = xOf(start);
+        const w = Math.max(0.5, (dur / tSpan) * plotW);
+        if (x > right || x + w < left) continue;
+        const y = yOf(row);
+        if (y + barH < PAD_TOP || y > PAD_TOP + plotH) continue;
+        const clippedX = Math.max(x, left);
+        const clippedW = Math.min(x + w, right) - clippedX;
+        sc.fillRect(clippedX, y, clippedW, Math.max(0.7, barH));
+      }
+      lc.globalCompositeOperation = "multiply";
+      lc.globalAlpha = DENSITY;
+      lc.drawImage(scopeLayer, 0, 0, size.w, size.h);
     }
+    lc.globalAlpha = 1;
+    lc.globalCompositeOperation = "source-over";
 
     // bloom, then the sharp exposure over it
     ctx.save();
@@ -269,64 +355,135 @@ export function TracePanel({ data }: { data: TraceData }) {
       }
     }
 
-    if (selection) {
-      const a = xOf(Math.min(selection.a, selection.b));
-      const b = xOf(Math.max(selection.a, selection.b));
-      // Wash the exposure out while measuring, harder outside the span, so the
-      // caliper and its numbers sit clear of the film underneath.
+    if (selection || laneSel) {
+      // A missing axis spans the whole plot, so one selection is a band and
+      // two are an intersection rectangle.
+      const a = selection ? xOf(Math.min(selection.a, selection.b)) : AXIS_W;
+      const b = selection
+        ? xOf(Math.max(selection.a, selection.b))
+        : AXIS_W + plotW;
+      const yFracOf = (f: number) => PAD_TOP + ((f - v0) / vSpan) * plotH;
+      const ya = laneSel ? yFracOf(Math.min(laneSel.a, laneSel.b)) : PAD_TOP;
+      const yb = laneSel
+        ? yFracOf(Math.max(laneSel.a, laneSel.b))
+        : PAD_TOP + plotH;
+      // Wash the exposure out while measuring, harder outside the selected
+      // region, so the calipers and their numbers sit clear of the film.
       ctx.fillStyle = "rgba(253,253,253,0.62)";
       ctx.fillRect(AXIS_W, PAD_TOP, a - AXIS_W, plotH);
       ctx.fillRect(b, PAD_TOP, AXIS_W + plotW - b, plotH);
+      ctx.fillRect(a, PAD_TOP, b - a, ya - PAD_TOP);
+      ctx.fillRect(a, yb, b - a, PAD_TOP + plotH - yb);
       ctx.fillStyle = "rgba(253,253,253,0.30)";
-      ctx.fillRect(a, PAD_TOP, b - a, plotH);
+      ctx.fillRect(a, ya, b - a, yb - ya);
       ctx.fillStyle = MARK_FILL;
-      ctx.fillRect(a, PAD_TOP, b - a, plotH);
+      ctx.fillRect(a, ya, b - a, yb - ya);
       ctx.strokeStyle = MARK;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(Math.round(a) + 0.5, PAD_TOP);
-      ctx.lineTo(Math.round(a) + 0.5, PAD_TOP + plotH);
-      ctx.moveTo(Math.round(b) + 0.5, PAD_TOP);
-      ctx.lineTo(Math.round(b) + 0.5, PAD_TOP + plotH);
-      ctx.stroke();
-
-      // caliper: the span reads on the selection itself, not off in a corner
-      const label = formatTime(Math.abs(selection.b - selection.a), data.span);
-      ctx.font =
-        "11px var(--font-sans, ui-sans-serif), ui-sans-serif, system-ui, sans-serif";
-      const textW = ctx.measureText(label).width;
-      const chipW = textW + 10;
-      const rule = PAD_TOP + 15;
-      const inside = b - a > chipW + 14;
-      const chipX = inside
-        ? (a + b) / 2 - chipW / 2
-        : Math.min(b + 6, AXIS_W + plotW - chipW - 2);
-
-      ctx.strokeStyle = MARK;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(a, rule - 4);
-      ctx.lineTo(a, rule + 4);
-      ctx.moveTo(b, rule - 4);
-      ctx.lineTo(b, rule + 4);
-      if (inside) {
-        ctx.moveTo(a, rule);
-        ctx.lineTo(chipX - 4, rule);
-        ctx.moveTo(chipX + chipW + 4, rule);
-        ctx.lineTo(b, rule);
-      } else {
-        ctx.moveTo(a, rule);
-        ctx.lineTo(b, rule);
+      if (selection) {
+        ctx.moveTo(Math.round(a) + 0.5, PAD_TOP);
+        ctx.lineTo(Math.round(a) + 0.5, PAD_TOP + plotH);
+        ctx.moveTo(Math.round(b) + 0.5, PAD_TOP);
+        ctx.lineTo(Math.round(b) + 0.5, PAD_TOP + plotH);
+      }
+      if (laneSel) {
+        ctx.moveTo(AXIS_W, Math.round(ya) + 0.5);
+        ctx.lineTo(AXIS_W + plotW, Math.round(ya) + 0.5);
+        ctx.moveTo(AXIS_W, Math.round(yb) + 0.5);
+        ctx.lineTo(AXIS_W + plotW, Math.round(yb) + 0.5);
       }
       ctx.stroke();
 
-      ctx.fillStyle = MARK;
-      ctx.fillRect(chipX, rule - 8, chipW, 16);
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(label, chipX + chipW / 2, rule + 0.5);
-      ctx.textBaseline = "top";
+      ctx.font =
+        "11px var(--font-sans, ui-sans-serif), ui-sans-serif, system-ui, sans-serif";
+
+      if (selection) {
+        // caliper: the span reads on the selection itself, not off in a corner
+        const label = formatTime(
+          Math.abs(selection.b - selection.a),
+          data.span,
+        );
+        const textW = ctx.measureText(label).width;
+        const chipW = textW + 10;
+        const rule = ya + 15;
+        const inside = b - a > chipW + 14;
+        const chipX = inside
+          ? (a + b) / 2 - chipW / 2
+          : Math.min(b + 6, AXIS_W + plotW - chipW - 2);
+
+        ctx.strokeStyle = MARK;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(a, rule - 4);
+        ctx.lineTo(a, rule + 4);
+        ctx.moveTo(b, rule - 4);
+        ctx.lineTo(b, rule + 4);
+        if (inside) {
+          ctx.moveTo(a, rule);
+          ctx.lineTo(chipX - 4, rule);
+          ctx.moveTo(chipX + chipW + 4, rule);
+          ctx.lineTo(b, rule);
+        } else {
+          ctx.moveTo(a, rule);
+          ctx.lineTo(b, rule);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = MARK;
+        ctx.fillRect(chipX, rule - 8, chipW, 16);
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, chipX + chipW / 2, rule + 0.5);
+        ctx.textBaseline = "top";
+      }
+
+      if (laneSel) {
+        // lane caliper: same idiom rotated, the count reads on the band
+        const lanes = Math.max(
+          1,
+          Math.round(Math.abs(laneSel.b - laneSel.a) * data.lanes.length),
+        );
+        const label = `${lanes} ${lanes === 1 ? "lane" : "lanes"}`;
+        const chipW = ctx.measureText(label).width + 10;
+        const rule = a + 15;
+        const inside = yb - ya > 16 + 14;
+        const chipY = inside
+          ? (ya + yb) / 2
+          : Math.min(yb + 14, PAD_TOP + plotH - 10);
+        const chipX = clamp(
+          rule - chipW / 2,
+          AXIS_W + 2,
+          AXIS_W + plotW - chipW - 2,
+        );
+
+        ctx.strokeStyle = MARK;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(rule - 4, ya);
+        ctx.lineTo(rule + 4, ya);
+        ctx.moveTo(rule - 4, yb);
+        ctx.lineTo(rule + 4, yb);
+        if (inside) {
+          ctx.moveTo(rule, ya);
+          ctx.lineTo(rule, chipY - 12);
+          ctx.moveTo(rule, chipY + 12);
+          ctx.lineTo(rule, yb);
+        } else {
+          ctx.moveTo(rule, ya);
+          ctx.lineTo(rule, yb);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = MARK;
+        ctx.fillRect(chipX, chipY - 8, chipW, 16);
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, chipX + chipW / 2, chipY + 0.5);
+        ctx.textBaseline = "top";
+      }
     }
 
     if (hover) {
@@ -422,6 +579,36 @@ export function TracePanel({ data }: { data: TraceData }) {
       }
     }
 
+    if (laneSel) {
+      ctx.font =
+        "11px var(--font-sans, ui-sans-serif), ui-sans-serif, system-ui, sans-serif";
+      ctx.textBaseline = "middle";
+      const fa = Math.min(laneSel.a, laneSel.b);
+      const fb = Math.max(laneSel.a, laneSel.b);
+      // edge rows are inclusive: the upper edge names the first selected row,
+      // the lower edge the last one
+      const edges: [number, number][] = [
+        [fa, clamp(Math.floor(fa * rows.count), 0, rows.count - 1)],
+        [fb, clamp(Math.ceil(fb * rows.count) - 1, 0, rows.count - 1)],
+      ];
+      for (const [frac, row] of edges) {
+        const y = PAD_TOP + ((frac - v0) / vSpan) * plotH;
+        if (y < PAD_TOP || y > PAD_TOP + plotH) continue;
+        const label = rows.label(row);
+        const w = ctx.measureText(label).width + 8;
+        const by = clamp(y - 7, PAD_TOP, PAD_TOP + plotH - 15);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(AXIS_W - w - 4, by, w, 15);
+        ctx.strokeStyle = MARK;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(AXIS_W - w - 3.5, by + 0.5, w - 1, 14);
+        ctx.fillStyle = MARK;
+        ctx.textAlign = "center";
+        ctx.fillText(label, AXIS_W - 4 - w / 2, by + 8);
+      }
+      ctx.textBaseline = "top";
+    }
+
     // lane axis
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
@@ -437,7 +624,7 @@ export function TracePanel({ data }: { data: TraceData }) {
       ctx.fillStyle = TICK;
       ctx.fillText(rows.label(row), AXIS_W - 8, y);
     }
-  }, [data, view, size, rows, selection, cursor, hover, plotH, plotW]);
+  }, [data, intervalsByScope, view, size, rows, selection, laneSel, cursor, hover, plotH, plotW]);
 
   /* ----------------------------------------------------------- interaction */
   const toTime = useCallback(
@@ -448,6 +635,16 @@ export function TracePanel({ data }: { data: TraceData }) {
       return view.t0 + (x / Math.max(plotW, 1)) * (view.t1 - view.t0);
     },
     [view, plotW],
+  );
+
+  const toLaneFrac = useCallback(
+    (clientY: number) => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return view.v0;
+      const y = clamp(clientY - rect.top - PAD_TOP, 0, Math.max(plotH, 1));
+      return view.v0 + (y / Math.max(plotH, 1)) * (view.v1 - view.v0);
+    },
+    [view, plotH],
   );
 
   const zoomTime = useCallback(
@@ -480,16 +677,19 @@ export function TracePanel({ data }: { data: TraceData }) {
     if (!canvas) return;
     function onWheel(event: WheelEvent) {
       event.preventDefault();
-      // Browsers turn shift+wheel into horizontal scroll, so the amount can
-      // arrive on either axis; and some report lines or pages, not pixels.
-      const raw =
-        Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-          ? event.deltaY
-          : event.deltaX;
+      // Some devices report lines or pages, not pixels.
       const perUnit =
         event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
-      const factor = Math.exp(raw * perUnit * 0.0015);
-      if (event.shiftKey || event.altKey) {
+      const dy = event.deltaY * perUnit;
+      const dx = event.deltaX * perUnit;
+
+      // cmd+wheel zooms time, option+wheel zooms lanes, a bare wheel pans:
+      // vertically through the lanes, horizontally along the time axis.
+      if (event.metaKey || event.ctrlKey) {
+        zoomTime(Math.exp(dy * 0.0015), toTime(event.clientX));
+        return;
+      }
+      if (event.altKey) {
         const rect = canvas!.getBoundingClientRect();
         const y = clamp(
           event.clientY - rect.top - PAD_TOP,
@@ -497,14 +697,33 @@ export function TracePanel({ data }: { data: TraceData }) {
           Math.max(plotH, 1),
         );
         const anchor = view.v0 + (y / Math.max(plotH, 1)) * (view.v1 - view.v0);
-        zoomLanes(factor, anchor);
-      } else {
-        zoomTime(factor, toTime(event.clientX));
+        zoomLanes(Math.exp(dy * 0.0015), anchor);
+        return;
       }
+      setView((prev) => {
+        const vSpan = prev.v1 - prev.v0;
+        const dv = clamp(
+          (dy / Math.max(plotH, 1)) * vSpan,
+          -prev.v0,
+          1 - prev.v1,
+        );
+        const tSpan = prev.t1 - prev.t0;
+        const dt = clamp(
+          (dx / Math.max(plotW, 1)) * tSpan,
+          -prev.t0,
+          data.span - prev.t1,
+        );
+        return {
+          t0: prev.t0 + dt,
+          t1: prev.t1 + dt,
+          v0: prev.v0 + dv,
+          v1: prev.v1 + dv,
+        };
+      });
     }
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [toTime, zoomTime, zoomLanes, view, plotH]);
+  }, [toTime, zoomTime, zoomLanes, view, plotH, plotW, data.span]);
 
   /** The interval under the pointer, or null over film. */
   const hitTest = useCallback(
@@ -532,10 +751,16 @@ export function TracePanel({ data }: { data: TraceData }) {
 
   function onPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     (event.target as Element).setPointerCapture?.(event.pointerId);
-    // The axis strip selects a time range; the plot itself pans.
-    if (y > PAD_TOP + plotH || event.shiftKey) {
+    // The bottom axis strip selects a time range, the lane gutter a lane
+    // range; the plot itself pans.
+    if (x < AXIS_W && y <= PAD_TOP + plotH) {
+      const from = toLaneFrac(event.clientY);
+      drag.current = { kind: "vselect", from };
+      setLaneSel({ a: from, b: from });
+    } else if (y > PAD_TOP + plotH || event.shiftKey) {
       const from = toTime(event.clientX);
       drag.current = { kind: "select", from };
       setSelection({ a: from, b: from });
@@ -563,6 +788,10 @@ export function TracePanel({ data }: { data: TraceData }) {
       setSelection({ a: state.from, b: toTime(event.clientX) });
       return;
     }
+    if (state.kind === "vselect") {
+      setLaneSel({ a: state.from, b: toLaneFrac(event.clientY) });
+      return;
+    }
     const tPerPx = (state.view.t1 - state.view.t0) / Math.max(plotW, 1);
     const vPerPx = (state.view.v1 - state.view.v0) / Math.max(plotH, 1);
     const dt = (event.clientX - state.x) * tPerPx;
@@ -577,11 +806,46 @@ export function TracePanel({ data }: { data: TraceData }) {
   function endDrag(event: React.PointerEvent<HTMLCanvasElement>) {
     const state = drag.current;
     drag.current = null;
+    // A degenerate axis drag leaves no band behind.
+    if (state?.kind === "select" && selection) {
+      const px =
+        (Math.abs(selection.b - selection.a) /
+          Math.max(view.t1 - view.t0, 1e-9)) *
+        plotW;
+      if (px < 3) setSelection(null);
+      return;
+    }
+    if (state?.kind === "vselect" && laneSel) {
+      const px =
+        (Math.abs(laneSel.b - laneSel.a) / Math.max(view.v1 - view.v0, 1e-9)) *
+        plotH;
+      if (px < 3) setLaneSel(null);
+      return;
+    }
     if (
       state?.kind === "pan" &&
       Math.abs(event.clientX - state.x) < 3 &&
       Math.abs(event.clientY - state.y) < 3
     ) {
+      // A click outside the selected region clears the selection; inside it,
+      // or with none held, the click places the time cursor.
+      if (selection || laneSel) {
+        const t = toTime(event.clientX);
+        const f = toLaneFrac(event.clientY);
+        const inT =
+          !selection ||
+          (t >= Math.min(selection.a, selection.b) &&
+            t <= Math.max(selection.a, selection.b));
+        const inF =
+          !laneSel ||
+          (f >= Math.min(laneSel.a, laneSel.b) &&
+            f <= Math.max(laneSel.a, laneSel.b));
+        if (!(inT && inF)) {
+          setSelection(null);
+          setLaneSel(null);
+          return;
+        }
+      }
       setCursor(toTime(event.clientX));
     }
   }
@@ -589,6 +853,7 @@ export function TracePanel({ data }: { data: TraceData }) {
   function reset() {
     setView({ t0: 0, t1: data.span, v0: 0, v1: 1 });
     setSelection(null);
+    setLaneSel(null);
     setCursor(null);
   }
 
@@ -596,19 +861,54 @@ export function TracePanel({ data }: { data: TraceData }) {
     "h-6 rounded border border-line px-2 text-ink-soft transition-colors hover:border-muted/50 hover:text-ink";
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <>
+      {fullscreen && (
+        <div
+          className="fixed inset-0 z-40 bg-ink/25 backdrop-blur-sm"
+          onClick={() => setFullscreen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {fullscreen && (
+        <button
+          type="button"
+          onClick={() => setFullscreen(false)}
+          aria-label="exit fullscreen"
+          className="fixed right-[calc(8vw+0.5rem)] top-[calc(9vh+0.4rem)] z-50 h-6 w-6 rounded border border-line bg-surface text-sm text-ink-soft transition-colors hover:border-muted/50 hover:text-ink"
+        >
+          ×
+        </button>
+      )}
+      {/* The same node in both modes, so the canvas subtree never remounts:
+          fullscreen only swaps the container's classes and lets the resize
+          observer refit the plot to the lightbox. */}
+      <div
+        className={
+          fullscreen
+            ? "fixed left-1/2 top-1/2 z-50 flex h-[82vh] w-[84vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-line bg-surface p-4 pt-8 shadow-paper"
+            : "flex h-full min-h-0 flex-col"
+        }
+      >
       <div className="flex items-center justify-between gap-4 pb-2 text-xs text-muted">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          {data.scopes.map((scope, i) => (
-            <span key={scope.id} className="flex items-center gap-1.5">
-              <span
-                className="block h-2.5 w-4 rounded-[1px] border border-line"
-                style={{
-                  backgroundColor: inkAt(density(i, data.scopes.length)),
-                }}
-                aria-hidden="true"
-              />
-              <span className="text-ink-soft">{scope.label}</span>
+        <div className="flex flex-col gap-y-1">
+          {groupScopesByRole(data.scopes).map((group) => (
+            <span
+              key={group.role ?? "\u0000ungrouped"}
+              className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5"
+            >
+              {group.role && (
+                <span className="font-medium text-muted/80">{group.role}</span>
+              )}
+              {group.entries.map(({ scope, index }) => (
+                <span key={scope.id} className="flex items-center gap-1.5">
+                  <span
+                    className="block h-2.5 w-4 rounded-[1px] border border-line"
+                    style={{ backgroundColor: legendInk(index) }}
+                    aria-hidden="true"
+                  />
+                  <span className="text-ink-soft">{scope.label}</span>
+                </span>
+              ))}
             </span>
           ))}
         </div>
@@ -662,8 +962,8 @@ export function TracePanel({ data }: { data: TraceData }) {
           </button>
           <button
             type="button"
-            onClick={reset}
-            aria-label="reset"
+            onClick={() => setFullscreen(true)}
+            aria-label="fullscreen"
             className={`${control} ml-1`}
           >
             ⤢
@@ -718,6 +1018,7 @@ export function TracePanel({ data }: { data: TraceData }) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

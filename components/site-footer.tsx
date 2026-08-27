@@ -8,8 +8,8 @@ export function SiteFooter({ lang }: { lang: Locale }) {
   const { projectName, duration, poweredBy } = siteConfig;
 
   return (
-    <footer className="mt-24 border-t border-line">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+    <footer className="mt-12 border-t border-line">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div>
           <Brand size="sm" />
           <p className="mt-1 text-sm text-muted">{content.footerNote}</p>
@@ -64,7 +64,7 @@ export function SiteFooter({ lang }: { lang: Locale }) {
 
       {/* Required attribution line: [Project Name] [Duration] | Powered by Goodoc */}
       <div className="border-t border-line-soft">
-        <div className="mx-auto max-w-7xl px-5 py-4 text-sm text-muted sm:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-2 text-sm text-muted sm:px-8">
           <span className="text-ink-soft">{projectName}</span>{" "}
           <span>{duration}</span>
           <span className="mx-2 text-line">|</span>

@@ -61,6 +61,12 @@ export interface TraceRecord {
    * absolute "https://…" (opens in a new tab).
    */
   href?: string;
+  /**
+   * The literal library call that produced the launch, in code form:
+   * `api(arg=value, ...)`. Shown in the Parameters column when present;
+   * `params` stays the structured identity used by filters and links.
+   */
+  call?: string;
   /** Capture facts, one table column each, e.g. `{ GPU: "H100 PCIe" }`. */
   meta?: Record<string, string>;
   /** The G-Watch release that captured the trace, e.g. "0.0.31". */
@@ -84,7 +90,21 @@ const TRACE_RECORDS: TraceRecord[] = [
     arch: "sm90a",
     kernel: "nvjet_hsh_64x48_64x15_2x4_v_bz_NNT",
     params: { api: "cublasGemmEx", m: 512, n: 512, k: 512, precision: "fp16", layout: "NN" },
-    meta: { GPU: "H100 80GB HBM3" },
+    call: [
+      "cublasGemmEx(",
+      "  handle,",
+      "  transa=CUBLAS_OP_N, transb=CUBLAS_OP_N,",
+      "  m=512, n=512, k=512,",
+      "  alpha=1.0f,",
+      "  A, Atype=CUDA_R_16F, lda=512,",
+      "  B, Btype=CUDA_R_16F, ldb=512,",
+      "  beta=0.0f,",
+      "  C, Ctype=CUDA_R_16F, ldc=512,",
+      "  computeType=CUBLAS_COMPUTE_32F,",
+      "  algo=CUBLAS_GEMM_DEFAULT",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
     gwatchVersion: "0.0.33",
     trace: "/traces/cublas-nvjet-hsh-64x48-m512n512k512-fp16-nn.json",
   },

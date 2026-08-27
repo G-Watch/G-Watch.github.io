@@ -296,6 +296,24 @@ function KernelColumn({
  * ---------------------------------------------------------------------- */
 
 /** One group of options inside a facet filter. */
+/**
+ * The filterable parameters of a record: every `name=value` inside the literal
+ * API call's parentheses, in call order; records without a call fall back to
+ * the structured params.
+ */
+function paramsOf(record: TraceRecord): Record<string, string> {
+  if (!record.call) {
+    return Object.fromEntries(
+      Object.entries(record.params).map(([key, value]) => [key, String(value)]),
+    );
+  }
+  const out: Record<string, string> = {};
+  for (const match of record.call.matchAll(/([A-Za-z_]\w*)=([^,()\s]+)/g)) {
+    out[match[1]] = match[2];
+  }
+  return out;
+}
+
 interface FacetGroup {
   key: string;
   values: string[];
@@ -439,6 +457,142 @@ function FacetFilter({
   );
 }
 
+/**
+ * The Parameters filter: one tab per call parameter, the active tab listing
+ * that parameter's values. Picks combine as OR within a parameter and AND
+ * across parameters, so a full combination pins one concrete call.
+ */
+function ParamTabFilter({
+  groups,
+  tokens,
+  onChange,
+  placeholder,
+  label,
+}: {
+  groups: FacetGroup[];
+  tokens: ParamToken[];
+  onChange: (tokens: ParamToken[]) => void;
+  placeholder: string;
+  label: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [open]);
+
+  const picked = new Set(tokens.map(tokenId));
+  const active =
+    groups.find((group) => group.key === activeKey) ?? groups[0] ?? null;
+
+  return (
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((was) => !was)}
+        aria-label={label}
+        aria-expanded={open}
+        className={`flex w-full flex-wrap items-center gap-1 rounded border bg-surface px-1.5 py-1 text-left transition-colors ${
+          open ? "border-accent" : "border-line hover:border-muted/40"
+        }`}
+      >
+        {tokens.length === 0 ? (
+          <span className="py-0.5 text-xs text-muted/50">{placeholder}</span>
+        ) : (
+          tokens.map((token) => (
+            <span
+              key={tokenId(token)}
+              className="flex items-center gap-1 rounded bg-paper-deep px-1.5 py-0.5 font-mono text-[11px] text-ink-soft"
+            >
+              {tokenId(token)}
+              <span
+                role="button"
+                tabIndex={-1}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onChange(
+                    tokens.filter((t) => tokenId(t) !== tokenId(token)),
+                  );
+                }}
+                aria-label={`remove ${tokenId(token)}`}
+                className="text-muted transition-colors hover:text-ink"
+              >
+                ×
+              </span>
+            </span>
+          ))
+        )}
+      </button>
+      {open && (
+        <div className="absolute left-0 z-20 mt-1 w-80 rounded border border-line bg-surface shadow-paper">
+          <div className="flex flex-wrap gap-1 border-b border-line-soft p-1.5">
+            {groups.map((group) => {
+              const isActive = group.key === (active?.key ?? null);
+              const pickedInGroup = tokens.some((t) => t.key === group.key);
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveKey(group.key)}
+                  className={`rounded px-2 py-0.5 font-mono text-[11px] transition-colors ${
+                    isActive
+                      ? "bg-accent-soft font-bold text-accent-strong"
+                      : pickedInGroup
+                        ? "bg-paper-deep text-ink"
+                        : "text-ink-soft hover:bg-paper-deep hover:text-ink"
+                  }`}
+                >
+                  {group.key}
+                </button>
+              );
+            })}
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1.5">
+            {active === null ? (
+              <p className="px-2 py-1.5 text-xs text-muted">—</p>
+            ) : (
+              active.values.map((value) => {
+                const id = `${active.key}=${value}`;
+                const isPicked = picked.has(id);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isPicked}
+                    onClick={() =>
+                      onChange(
+                        isPicked
+                          ? tokens.filter((t) => tokenId(t) !== id)
+                          : [...tokens, { key: active.key, value }],
+                      )
+                    }
+                    className={`block w-full truncate rounded px-2 py-1 text-left font-mono text-xs transition-colors ${
+                      isPicked
+                        ? "bg-accent-soft font-bold text-accent-strong"
+                        : "text-ink-soft hover:bg-paper-deep hover:text-ink"
+                    }`}
+                  >
+                    {value}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------------
  * Table
  * ---------------------------------------------------------------------- */
@@ -477,7 +631,13 @@ function TraceRow({
           key={column.id}
           className={`py-3 pr-4 text-sm ${i === 0 ? "text-ink" : "text-ink-soft"}`}
         >
-          {column.value(record) || "—"}
+          {column.id === "params" && record.call ? (
+            <code className="block max-w-xl whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-ink">
+              {record.call}
+            </code>
+          ) : (
+            column.value(record) || "—"
+          )}
         </td>
       ))}
       <td className="py-3 text-right">
@@ -532,10 +692,18 @@ function GhostRows({ columns }: { columns: Column[] }) {
  * Trace view
  * ---------------------------------------------------------------------- */
 
+/**
+ * The per-kernel views, one tab each. The trace timeline is the first; further
+ * views (counters, source, notes, ...) register here and get a tab for free.
+ */
+const KERNEL_TABS = [{ id: "trace", label: "Trace" }] as const;
+type KernelTabId = (typeof KERNEL_TABS)[number]["id"];
+
 /** Loads one record's trace JSON on demand and hands it to the panel. */
 function TraceView({ record }: { record: TraceRecord }) {
   const [data, setData] = useState<TraceData | null>(null);
   const [failed, setFailed] = useState(false);
+  const [tab, setTab] = useState<KernelTabId>("trace");
   const source = record.trace;
 
   useEffect(() => {
@@ -558,15 +726,42 @@ function TraceView({ record }: { record: TraceRecord }) {
     };
   }, [source]);
 
+  const tabBar = (
+    <div className="mt-4 flex items-end gap-1 border-b border-line" role="tablist">
+      {KERNEL_TABS.map((entry) => (
+        <button
+          key={entry.id}
+          type="button"
+          role="tab"
+          aria-selected={tab === entry.id}
+          onClick={() => setTab(entry.id)}
+          className={`-mb-px rounded-t-md border border-b-0 px-3 py-1.5 text-xs transition-colors ${
+            tab === entry.id
+              ? "border-line bg-surface text-ink"
+              : "border-transparent text-muted hover:text-ink-soft"
+          }`}
+        >
+          {entry.label}
+        </button>
+      ))}
+    </div>
+  );
+
   if (!source || failed) {
     return (
-      <div className="mt-4 flex-1 rounded-xl border border-line bg-surface" />
+      <>
+        {tabBar}
+        <div className="min-h-0 flex-1 rounded-b-xl border border-t-0 border-line bg-surface" />
+      </>
     );
   }
   return (
-    <div className="mt-4 min-h-0 flex-1 rounded-xl border border-line bg-surface p-4">
-      {data ? <TracePanel key={source} data={data} /> : null}
-    </div>
+    <>
+      {tabBar}
+      <div className="min-h-0 flex-1 rounded-b-xl border border-t-0 border-line bg-surface p-4">
+        {tab === "trace" && data ? <TracePanel key={source} data={data} /> : null}
+      </div>
+    </>
   );
 }
 
@@ -679,9 +874,9 @@ export function OpenTracesBrowser({
     }
     const byKey = new Map<string, Set<string>>();
     for (const record of scope) {
-      for (const [key, value] of Object.entries(record.params)) {
+      for (const [key, value] of Object.entries(paramsOf(record))) {
         const values = byKey.get(key) ?? new Set<string>();
-        values.add(String(value));
+        values.add(value);
         byKey.set(key, values);
       }
     }
@@ -706,7 +901,7 @@ export function OpenTracesBrowser({
     return [...byKey].every(([key, values]) =>
       values.has(
         column.id === "params"
-          ? String(record.params[key] ?? "")
+          ? (paramsOf(record)[key] ?? "")
           : column.value(record),
       ),
     );
@@ -864,19 +1059,34 @@ export function OpenTracesBrowser({
                         {!hasRecords ? (
                           <Ghost className="w-full" />
                         ) : !activeKernel ? null : (
-                          <FacetFilter
-                            groups={groupsOf(column)}
-                            tokens={facets[column.id] ?? []}
-                            onChange={(tokens) =>
-                              setFacets((prev) => ({
-                                ...prev,
-                                [column.id]: tokens,
-                              }))
-                            }
-                            placeholder={copy.filterHint}
-                            label={column.label}
-                            showGroupLabels={column.id === "params"}
-                          />
+                          column.id === "params" ? (
+                            <ParamTabFilter
+                              groups={groupsOf(column)}
+                              tokens={facets[column.id] ?? []}
+                              onChange={(tokens) =>
+                                setFacets((prev) => ({
+                                  ...prev,
+                                  [column.id]: tokens,
+                                }))
+                              }
+                              placeholder={copy.filterHint}
+                              label={column.label}
+                            />
+                          ) : (
+                            <FacetFilter
+                              groups={groupsOf(column)}
+                              tokens={facets[column.id] ?? []}
+                              onChange={(tokens) =>
+                                setFacets((prev) => ({
+                                  ...prev,
+                                  [column.id]: tokens,
+                                }))
+                              }
+                              placeholder={copy.filterHint}
+                              label={column.label}
+                              showGroupLabels={false}
+                            />
+                          )
                         )}
                       </td>
                     ))}

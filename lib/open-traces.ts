@@ -108,6 +108,46 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.33",
     trace: "/traces/cublas-nvjet-hsh-64x48-m512n512k512-fp16-nn.json",
   },
+  // cuDNN 9.2 · sm90a · xmma implicit-GEMM fprop conv, driven directly through
+  // cudnnConvolutionForward
+  {
+    vendor: "NVIDIA",
+    software: "cuDNN",
+    version: "9.2.1",
+    arch: "sm90a",
+    kernel: "sm90_xmma_fprop_implicit_gemm 128x128x32 segment_k_off",
+    params: {
+      api: "cudnnConvolutionForward",
+      n: 8,
+      c: 128,
+      h: 56,
+      w: 56,
+      k: 128,
+      r: 3,
+      s: 3,
+      pad: 1,
+      stride: 1,
+      precision: "fp16",
+      layout: "NHWC",
+    },
+    call: [
+      "cudnnConvolutionForward(",
+      "  handle,",
+      "  alpha=1.0f,",
+      "  xDesc={NHWC, HALF, n=8, c=128, h=56, w=56}, x,",
+      "  wDesc={NHWC, HALF, k=128, c=128, r=3, s=3}, w,",
+      "  convDesc={pad=1x1, stride=1x1, dilation=1x1,",
+      "            CROSS_CORRELATION, computeType=FLOAT},",
+      "  algo=CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM,",
+      "  workspace, workspaceSize,",
+      "  beta=0.0f,",
+      "  yDesc={NHWC, HALF, n=8, c=128, h=56, w=56}, y",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/cudnn-xmma-fprop-128x128x32-n8c128hw56-fp16-nhwc.json",
+  },
 ];
 
 /**

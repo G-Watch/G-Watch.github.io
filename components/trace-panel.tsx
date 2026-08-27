@@ -60,7 +60,7 @@ const inkAt = (index: number, alpha: number) => {
   return `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
 };
 
-const legendInk = (index: number) => {
+export const legendInk = (index: number) => {
   const [r, g, b] = scopeRgb(index);
   return `rgb(${r},${g},${b})`;
 };
@@ -69,7 +69,7 @@ const legendInk = (index: number) => {
  * Legend groups: consecutive-by-first-appearance buckets of scopes sharing a
  * warp role. The scope's palette index is carried so grouping never recolors.
  */
-function groupScopesByRole(scopes: TraceData["scopes"]) {
+export function groupScopesByRole(scopes: TraceData["scopes"]) {
   const groups: {
     role?: string;
     entries: { scope: TraceData["scopes"][number]; index: number }[];

@@ -18,6 +18,7 @@ import { localePath, type Locale } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
 import { normalizeTrace, type TraceData } from "@/lib/trace-format";
 import { TracePanel } from "./trace-panel";
+import { TraceStats } from "./trace-stats";
 
 /** Depth of the deepest sidebar level (arch); kernel has its own column. */
 const ARCH_DEPTH = NAV_LEVELS.length - 1;
@@ -696,7 +697,10 @@ function GhostRows({ columns }: { columns: Column[] }) {
  * The per-kernel views, one tab each. The trace timeline is the first; further
  * views (counters, source, notes, ...) register here and get a tab for free.
  */
-const KERNEL_TABS = [{ id: "trace", label: "Trace" }] as const;
+const KERNEL_TABS = [
+  { id: "trace", label: "Trace" },
+  { id: "stats", label: "Statistics" },
+] as const;
 type KernelTabId = (typeof KERNEL_TABS)[number]["id"];
 
 /** Loads one record's trace JSON on demand and hands it to the panel. */
@@ -760,6 +764,7 @@ function TraceView({ record }: { record: TraceRecord }) {
       {tabBar}
       <div className="min-h-0 flex-1 rounded-b-xl border border-t-0 border-line bg-surface p-4">
         {tab === "trace" && data ? <TracePanel key={source} data={data} /> : null}
+        {tab === "stats" && data ? <TraceStats key={source} data={data} /> : null}
       </div>
     </>
   );

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { siteConfig, getSiteContent } from "@/lib/site-config";
 import { navIcons } from "@/lib/nav-icons";
 import { localePath, type Locale } from "@/lib/i18n";
+import { withBasePath } from "@/lib/paths";
 import { LanguageSwitcher } from "./language-switcher";
 import { Brand } from "./brand";
 
@@ -25,9 +26,19 @@ export function SiteHeader({ lang }: { lang: Locale }) {
         <Link
           href={localePath(lang, "/")}
           aria-label={siteConfig.name}
-          className="inline-flex items-center"
+          className="inline-flex items-center gap-4"
         >
           <Brand size="lg" />
+          {lang === "zh" && (
+            // Chinese wordmark, shown only in the zh locale.
+            // Plain <img>: the static export has no next/image optimizer.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={withBasePath("/media/jiheng.png")}
+              alt="玑衡"
+              className="h-8 w-auto"
+            />
+          )}
         </Link>
 
         <nav className="hidden items-center gap-8 sm:flex">

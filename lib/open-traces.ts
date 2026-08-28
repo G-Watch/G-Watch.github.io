@@ -148,6 +148,33 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.33",
     trace: "/traces/cudnn-xmma-fprop-128x128x32-n8c128hw56-fp16-nhwc.json",
   },
+  // FlashAttention-3 · sm90a · warp-specialized TMA + wgmma attention forward,
+  // driven through the package's own flash_attn_func
+  {
+    vendor: "Dao AILab",
+    software: "FlashAttention-3",
+    version: "3.0.0b1",
+    arch: "sm90a",
+    kernel: "flash_fwd_sm90 bf16 hdim128 tile 128x176",
+    params: {
+      api: "flash_attn_func",
+      batch: 2,
+      seqlen: 1024,
+      heads: 8,
+      head_dim: 128,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  q, k, v,            # (2, 1024, 8, 128) bf16",
+      "  causal=False",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b2s1024h8.json",
+  },
 ];
 
 /**

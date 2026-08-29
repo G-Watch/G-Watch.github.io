@@ -43,6 +43,7 @@ const AXIS_W = 54; // lane axis gutter on the left
 const MIN_ROW_PX = 2.2; // below this a level is too dense to draw
 const MIN_MARK_PX = 3; // a marked run thinner than this would vanish
 const MIN_STRIPE_PX = 2.5; // below this a stripe is worse than the overlap
+const DRAG_AXIS_PX = 5; // travel before a plot drag commits to an axis
 const PAD_TOP = 8;
 
 const FILM = "#fdfdfd"; // clear film
@@ -332,6 +333,20 @@ export function TracePanel({
     | { kind: "pan"; x: number; y: number; view: View }
     | { kind: "select"; from: number }
     | { kind: "vselect"; from: number }
+    /**
+     * A drag begun on the plot itself. It measures rather than pans, and which
+     * axis it measures is not known until it has travelled far enough to say:
+     * across is a time range, down is a thread range. `axis` stays null while
+     * it is still short enough to be a click.
+     */
+    | {
+        kind: "plot";
+        x: number;
+        y: number;
+        t: number;
+        f: number;
+        axis: "time" | "lane" | null;
+      }
     | null
   >(null);
 
@@ -1042,23 +1057,44 @@ export function TracePanel({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     (event.target as Element).setPointerCapture?.(event.pointerId);
-    // The bottom axis strip selects a time range, the lane gutter a lane
-    // range; the plot itself pans.
+    // The bottom axis strip selects a time range and the lane gutter a thread
+    // range, as before. On the plot itself a drag now measures too, along
+    // whichever axis it travels: across for a time range, down for a thread
+    // range. Panning moves to the middle button or option, and is on the wheel
+    // either way.
     if (x < AXIS_W && y <= PAD_TOP + plotH) {
       const from = toLaneFrac(event.clientY);
       drag.current = { kind: "vselect", from };
       setMarkLanes(lanesInBand(from, from));
-    } else if (y > PAD_TOP + plotH || event.shiftKey) {
+    } else if (y > PAD_TOP + plotH) {
       const from = toTime(event.clientX);
       drag.current = { kind: "select", from };
       setSelection({ a: from, b: from });
-    } else {
+    } else if (
+      event.button === 1 ||
+      event.altKey ||
+      // A finger has no middle button and no option key, and dragging the plot
+      // is how a touch device expects to move it, so touch keeps panning there
+      // and measures from the two axis strips as it always did.
+      event.pointerType === "touch"
+    ) {
       drag.current = {
         kind: "pan",
         x: event.clientX,
         y: event.clientY,
         view: { ...view },
       };
+    } else {
+      drag.current = {
+        kind: "plot",
+        x: event.clientX,
+        y: event.clientY,
+        t: toTime(event.clientX),
+        f: toLaneFrac(event.clientY),
+        // shift says "time" outright, for a hand that does not travel straight
+        axis: event.shiftKey ? "time" : null,
+      };
+      if (event.shiftKey) setSelection({ a: toTime(event.clientX), b: toTime(event.clientX) });
     }
   }
 
@@ -1078,6 +1114,23 @@ export function TracePanel({
     }
     if (state.kind === "vselect") {
       setMarkLanes(lanesInBand(state.from, toLaneFrac(event.clientY)));
+      return;
+    }
+    if (state.kind === "plot") {
+      // The axis is chosen once, by whichever way the drag has travelled
+      // furthest when it first clears the threshold, and then held for the rest
+      // of it -- so a hand that drifts does not swap axes mid-measurement.
+      if (!state.axis) {
+        const dx = Math.abs(event.clientX - state.x);
+        const dy = Math.abs(event.clientY - state.y);
+        if (Math.max(dx, dy) < DRAG_AXIS_PX) return;
+        state.axis = dx >= dy ? "time" : "lane";
+      }
+      if (state.axis === "time") {
+        setSelection({ a: state.t, b: toTime(event.clientX) });
+      } else {
+        setMarkLanes(lanesInBand(state.f, toLaneFrac(event.clientY)));
+      }
       return;
     }
     const tPerPx = (state.view.t1 - state.view.t0) / Math.max(plotW, 1);
@@ -1112,8 +1165,25 @@ export function TracePanel({
       if (px < 3) setMarkLanes(null);
       return;
     }
+    if (state?.kind === "plot" && state.axis === "time") {
+      const px =
+        (Math.abs((selection?.b ?? 0) - (selection?.a ?? 0)) /
+          Math.max(view.t1 - view.t0, 1e-9)) *
+        plotW;
+      if (px < 3) setSelection(null);
+      return;
+    }
+    if (state?.kind === "plot" && state.axis === "lane") {
+      const run = markRuns?.[0];
+      const px = run
+        ? ((run.b - run.a) / Math.max(view.v1 - view.v0, 1e-9)) * plotH
+        : 0;
+      if (px < 3) setMarkLanes(null);
+      return;
+    }
+    // A plot drag that never picked an axis never left the click threshold.
     if (
-      state?.kind === "pan" &&
+      (state?.kind === "plot" || state?.kind === "pan") &&
       Math.abs(event.clientX - state.x) < 3 &&
       Math.abs(event.clientY - state.y) < 3
     ) {

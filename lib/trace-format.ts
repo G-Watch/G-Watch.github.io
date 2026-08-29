@@ -217,33 +217,39 @@ export function buildLaneRows(
   };
 }
 
+/** A run of the lane axis, as a fraction of it. The lane window is normalised. */
+export interface LaneRun {
+  a: number;
+  b: number;
+}
+
 /**
- * Where a set of lanes sits in display order, as a fraction of the axis. The
- * lane window is normalised [0,1], so this is what an outside caller (the SM
- * dispatching grid picking a block) needs to zoom to those lanes.
+ * Every contiguous run a set of lanes forms in display order.
  *
- * `whole` says the band holds nothing but the matched lanes. A block is one
- * contiguous run of threads, so it is whole under "tid" order and split across
- * the role bands under "role" — and a band that is not whole cannot be zoomed
- * to without dragging every other block's lanes along with it.
+ * This is how an outside caller (the SM dispatching grid picking a block)
+ * marks those lanes wherever the axis happens to be sorted. A block's threads
+ * are one run under "tid" order; role grouping cuts that run into one per warp
+ * role, and marking the span from the first to the last would claim nearly the
+ * whole launch, so each run is reported on its own.
  */
-export function laneBand(
+export function laneRuns(
   data: TraceData,
   order: LaneOrder,
   match: (lane: TraceLane) => boolean,
-): { v0: number; v1: number; whole: boolean } | null {
+): LaneRun[] {
   const seq = laneSequence(data, order);
-  let lo = seq.length;
-  let hi = 0;
-  let hits = 0;
+  const runs: LaneRun[] = [];
+  let from = -1;
   seq.forEach((lane, at) => {
-    if (!match(data.lanes[lane])) return;
-    hits++;
-    if (at < lo) lo = at;
-    if (at + 1 > hi) hi = at + 1;
+    if (match(data.lanes[lane])) {
+      if (from < 0) from = at;
+    } else if (from >= 0) {
+      runs.push({ a: from / seq.length, b: at / seq.length });
+      from = -1;
+    }
   });
-  if (hi <= lo) return null;
-  return { v0: lo / seq.length, v1: hi / seq.length, whole: hi - lo === hits };
+  if (from >= 0) runs.push({ a: from / seq.length, b: 1 });
+  return runs;
 }
 
 /**

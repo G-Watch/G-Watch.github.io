@@ -5,12 +5,13 @@ import {
   buildLaneRows,
   formatTime,
   hasWarpRoles,
-  laneBand,
+  laneRuns,
   niceStep,
   usableLevels,
   type LaneLevel,
   type LaneOrder,
   type LaneRows,
+  type LaneRun,
   type TraceData,
   type TraceLane,
 } from "@/lib/trace-format";
@@ -31,6 +32,7 @@ import {
 const AXIS_H = 26; // time axis strip along the bottom
 const AXIS_W = 54; // lane axis gutter on the left
 const MIN_ROW_PX = 2.2; // below this a level is too dense to draw
+const MIN_MARK_PX = 3; // a marked run thinner than this would vanish
 const PAD_TOP = 8;
 
 const FILM = "#fdfdfd"; // clear film
@@ -169,7 +171,9 @@ export function TracePanel({
     null,
   );
   // Lane selection in normalised [0,1] lane space, zoom-independent like time.
-  const [laneSel, setLaneSel] = useState<{ a: number; b: number } | null>(null);
+  // A drag leaves one run; a picked block leaves one per warp role, since role
+  // grouping cuts its threads into a band apiece. Runs are ordered and disjoint.
+  const [laneSel, setLaneSel] = useState<LaneRun[] | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hover, setHover] = useState<{
     x: number;
@@ -181,44 +185,42 @@ export function TracePanel({
     dur: number;
   } | null>(null);
 
-  // an externally picked block zooms the lane axis onto its lanes and marks them
-  // with the lane selection, so the block reads as a band with its thread range
-  // named on both calipers. The time span stays whole.
+  // an externally picked block zooms the lane axis onto its lanes and marks each
+  // run of them, so the block reads as its bands with the thread ranges named
+  // on the calipers. The time span stays whole.
   //
-  // Only a fresh pick does this. A block is one contiguous run of threads, and
-  // role grouping splits that run across the role bands, so a fresh pick drops
-  // to thread-id order where the block is the interval it actually is -- the
-  // toggle flips to show it. Re-reading the band after the order changed would
-  // instead mark the block as its first-to-last spread, which under role
-  // grouping holds most of the launch; and it would look right, because the
-  // window is set from the band, so the marked region covers the same two
-  // thirds of the plot however wide the band really is. Flipping the toggle
-  // releases the block instead, which is what the toggle already does.
+  // The block stays marked when the lane order changes: its runs are re-read in
+  // the new order, so role grouping shows it as one band per warp role rather
+  // than as a single span that would swallow most of the launch. A *fresh* pick
+  // additionally drops to thread-id order, where a block is the one contiguous
+  // interval it really is and the zoom can be tight; merely flipping the toggle
+  // does not, or the toggle and the block would fight over it.
   const pickedFocus = useRef<typeof focus>(null);
   useEffect(() => {
     if (!focus) return;
     const fresh = pickedFocus.current !== focus;
     pickedFocus.current = focus;
-    if (!fresh) return;
     const isBlock = (lane: TraceLane) => lane.block === focus.block;
-    let band = laneBand(data, laneOrder, isBlock);
-    if (band && !band.whole && laneOrder === "role") {
-      const whole = laneBand(data, "tid", isBlock);
-      if (whole?.whole) {
+    let runs = laneRuns(data, laneOrder, isBlock);
+    if (fresh && runs.length > 1) {
+      const whole = laneRuns(data, "tid", isBlock);
+      if (whole.length === 1) {
         setGroupByRole(false);
-        band = whole;
+        runs = whole;
       }
     }
-    if (!band) return;
-    // a margin of a quarter of the band on each side keeps the calipers off the
-    // plot edge and leaves the neighbouring blocks visible for scale
-    const margin = (band.v1 - band.v0) / 4;
-    setLaneSel({ a: band.v0, b: band.v1 });
+    if (!runs.length) return;
+    // a margin of a quarter of the marked span on each side keeps the calipers
+    // off the plot edge and leaves the neighbouring blocks visible for scale
+    const from = runs[0].a;
+    const to = runs[runs.length - 1].b;
+    const margin = (to - from) / 4;
+    setLaneSel(runs);
     setView({
       t0: 0,
       t1: data.span,
-      v0: Math.max(0, band.v0 - margin),
-      v1: Math.min(1, band.v1 + margin),
+      v0: Math.max(0, from - margin),
+      v1: Math.min(1, to + margin),
     });
   }, [focus, data, laneOrder]);
   const drag = useRef<
@@ -416,7 +418,11 @@ export function TracePanel({
       }
     }
 
-    if (selection || laneSel) {
+    // Runs to mark down the lane axis; none means the whole plot is the band,
+    // which is what a time selection on its own wants.
+    const marked = laneSel?.length ? laneSel : null;
+
+    if (selection || marked) {
       // A missing axis spans the whole plot, so one selection is a band and
       // two are an intersection rectangle.
       const a = selection ? xOf(Math.min(selection.a, selection.b)) : AXIS_W;
@@ -424,21 +430,46 @@ export function TracePanel({
         ? xOf(Math.max(selection.a, selection.b))
         : AXIS_W + plotW;
       const yFracOf = (f: number) => PAD_TOP + ((f - v0) / vSpan) * plotH;
-      const ya = laneSel ? yFracOf(Math.min(laneSel.a, laneSel.b)) : PAD_TOP;
-      const yb = laneSel
-        ? yFracOf(Math.max(laneSel.a, laneSel.b))
-        : PAD_TOP + plotH;
-      // Wash the exposure out while measuring, harder outside the selected
-      // region, so the calipers and their numbers sit clear of the film.
+      // A block's runs under role grouping are a couple of hundred lanes each
+      // inside a window spanning most of the axis, so drawn honestly they come
+      // out a pixel tall and vanish. Each run gets a visible minimum, and runs
+      // pushed into each other by it merge, which keeps them ordered and
+      // disjoint for the wash below. The lane count stays read off the data.
+      const bands: { y0: number; y1: number }[] = [];
+      for (const run of marked ?? [{ a: v0, b: v1 }]) {
+        let y0 = yFracOf(run.a);
+        let y1 = yFracOf(run.b);
+        if (y1 - y0 < MIN_MARK_PX) {
+          const mid = (y0 + y1) / 2;
+          y0 = mid - MIN_MARK_PX / 2;
+          y1 = mid + MIN_MARK_PX / 2;
+        }
+        const last = bands[bands.length - 1];
+        if (last && y0 <= last.y1) last.y1 = Math.max(last.y1, y1);
+        else bands.push({ y0, y1 });
+      }
+      const ya = bands[0].y0;
+
+      // Wash the exposure out while measuring, harder outside the marked runs
+      // and in the gaps between them, so the calipers and their numbers sit
+      // clear of the film.
       ctx.fillStyle = "rgba(253,253,253,0.62)";
       ctx.fillRect(AXIS_W, PAD_TOP, a - AXIS_W, plotH);
       ctx.fillRect(b, PAD_TOP, AXIS_W + plotW - b, plotH);
-      ctx.fillRect(a, PAD_TOP, b - a, ya - PAD_TOP);
-      ctx.fillRect(a, yb, b - a, PAD_TOP + plotH - yb);
-      ctx.fillStyle = "rgba(253,253,253,0.30)";
-      ctx.fillRect(a, ya, b - a, yb - ya);
-      ctx.fillStyle = MARK_FILL;
-      ctx.fillRect(a, ya, b - a, yb - ya);
+      let gap = PAD_TOP;
+      for (const band of bands) {
+        if (band.y0 > gap) ctx.fillRect(a, gap, b - a, band.y0 - gap);
+        gap = Math.max(gap, band.y1);
+      }
+      if (gap < PAD_TOP + plotH) {
+        ctx.fillRect(a, gap, b - a, PAD_TOP + plotH - gap);
+      }
+      for (const band of bands) {
+        ctx.fillStyle = "rgba(253,253,253,0.30)";
+        ctx.fillRect(a, band.y0, b - a, band.y1 - band.y0);
+        ctx.fillStyle = MARK_FILL;
+        ctx.fillRect(a, band.y0, b - a, band.y1 - band.y0);
+      }
       ctx.strokeStyle = MARK;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -448,11 +479,13 @@ export function TracePanel({
         ctx.moveTo(Math.round(b) + 0.5, PAD_TOP);
         ctx.lineTo(Math.round(b) + 0.5, PAD_TOP + plotH);
       }
-      if (laneSel) {
-        ctx.moveTo(AXIS_W, Math.round(ya) + 0.5);
-        ctx.lineTo(AXIS_W + plotW, Math.round(ya) + 0.5);
-        ctx.moveTo(AXIS_W, Math.round(yb) + 0.5);
-        ctx.lineTo(AXIS_W + plotW, Math.round(yb) + 0.5);
+      if (marked) {
+        for (const band of bands) {
+          ctx.moveTo(AXIS_W, Math.round(band.y0) + 0.5);
+          ctx.lineTo(AXIS_W + plotW, Math.round(band.y0) + 0.5);
+          ctx.moveTo(AXIS_W, Math.round(band.y1) + 0.5);
+          ctx.lineTo(AXIS_W + plotW, Math.round(band.y1) + 0.5);
+        }
       }
       ctx.stroke();
 
@@ -500,19 +533,28 @@ export function TracePanel({
         ctx.textBaseline = "top";
       }
 
-      if (laneSel) {
-        // lane caliper: same idiom rotated, the count reads on the band
+      if (marked) {
+        // lane caliper: same idiom rotated. Every run gets bracketed; the count
+        // is the whole selection's and reads on the tallest run, so a block
+        // split across the role bands still states its size once.
         const lanes = Math.max(
           1,
-          Math.round(Math.abs(laneSel.b - laneSel.a) * data.lanes.length),
+          Math.round(
+            marked.reduce((sum, run) => sum + (run.b - run.a), 0) *
+              data.lanes.length,
+          ),
         );
         const label = `${lanes} ${lanes === 1 ? "lane" : "lanes"}`;
         const chipW = ctx.measureText(label).width + 10;
         const rule = a + 15;
-        const inside = yb - ya > 16 + 14;
+        let tallest = bands[0];
+        for (const band of bands) {
+          if (band.y1 - band.y0 > tallest.y1 - tallest.y0) tallest = band;
+        }
+        const inside = tallest.y1 - tallest.y0 > 16 + 14;
         const chipY = inside
-          ? (ya + yb) / 2
-          : Math.min(yb + 14, PAD_TOP + plotH - 10);
+          ? (tallest.y0 + tallest.y1) / 2
+          : Math.min(tallest.y1 + 14, PAD_TOP + plotH - 10);
         const chipX = clamp(
           rule - chipW / 2,
           AXIS_W + 2,
@@ -522,18 +564,20 @@ export function TracePanel({
         ctx.strokeStyle = MARK;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(rule - 4, ya);
-        ctx.lineTo(rule + 4, ya);
-        ctx.moveTo(rule - 4, yb);
-        ctx.lineTo(rule + 4, yb);
-        if (inside) {
-          ctx.moveTo(rule, ya);
-          ctx.lineTo(rule, chipY - 12);
-          ctx.moveTo(rule, chipY + 12);
-          ctx.lineTo(rule, yb);
-        } else {
-          ctx.moveTo(rule, ya);
-          ctx.lineTo(rule, yb);
+        for (const band of bands) {
+          ctx.moveTo(rule - 4, band.y0);
+          ctx.lineTo(rule + 4, band.y0);
+          ctx.moveTo(rule - 4, band.y1);
+          ctx.lineTo(rule + 4, band.y1);
+          if (band === tallest && inside) {
+            ctx.moveTo(rule, band.y0);
+            ctx.lineTo(rule, chipY - 12);
+            ctx.moveTo(rule, chipY + 12);
+            ctx.lineTo(rule, band.y1);
+          } else {
+            ctx.moveTo(rule, band.y0);
+            ctx.lineTo(rule, band.y1);
+          }
         }
         ctx.stroke();
 
@@ -640,21 +684,31 @@ export function TracePanel({
       }
     }
 
-    if (laneSel) {
+    if (marked) {
       ctx.font =
         "11px var(--font-sans, ui-sans-serif), ui-sans-serif, system-ui, sans-serif";
       ctx.textBaseline = "middle";
-      const fa = Math.min(laneSel.a, laneSel.b);
-      const fb = Math.max(laneSel.a, laneSel.b);
-      // edge rows are inclusive: the upper edge names the first selected row,
-      // the lower edge the last one
-      const edges: [number, number][] = [
-        [fa, clamp(Math.floor(fa * rows.count), 0, rows.count - 1)],
-        [fb, clamp(Math.ceil(fb * rows.count) - 1, 0, rows.count - 1)],
-      ];
+      // edge rows are inclusive: a run's upper edge names its first row, its
+      // lower edge its last one. Runs are ordered, so the labels come out top
+      // to bottom and one that would land on the previous is dropped rather
+      // than stacked on it.
+      const edges: [number, number][] = [];
+      for (const run of marked) {
+        edges.push([
+          run.a,
+          clamp(Math.floor(run.a * rows.count), 0, rows.count - 1),
+        ]);
+        edges.push([
+          run.b,
+          clamp(Math.ceil(run.b * rows.count) - 1, 0, rows.count - 1),
+        ]);
+      }
+      let lastY = -Infinity;
       for (const [frac, row] of edges) {
         const y = PAD_TOP + ((frac - v0) / vSpan) * plotH;
         if (y < PAD_TOP || y > PAD_TOP + plotH) continue;
+        if (y - lastY < 16) continue;
+        lastY = y;
         const label = rows.label(row);
         const w = ctx.measureText(label).width + 8;
         const by = clamp(y - 7, PAD_TOP, PAD_TOP + plotH - 15);
@@ -820,7 +874,7 @@ export function TracePanel({
     if (x < AXIS_W && y <= PAD_TOP + plotH) {
       const from = toLaneFrac(event.clientY);
       drag.current = { kind: "vselect", from };
-      setLaneSel({ a: from, b: from });
+      setLaneSel([{ a: from, b: from }]);
     } else if (y > PAD_TOP + plotH || event.shiftKey) {
       const from = toTime(event.clientX);
       drag.current = { kind: "select", from };
@@ -850,7 +904,8 @@ export function TracePanel({
       return;
     }
     if (state.kind === "vselect") {
-      setLaneSel({ a: state.from, b: toLaneFrac(event.clientY) });
+      const to = toLaneFrac(event.clientY);
+      setLaneSel([{ a: Math.min(state.from, to), b: Math.max(state.from, to) }]);
       return;
     }
     const tPerPx = (state.view.t1 - state.view.t0) / Math.max(plotW, 1);
@@ -876,10 +931,10 @@ export function TracePanel({
       if (px < 3) setSelection(null);
       return;
     }
-    if (state?.kind === "vselect" && laneSel) {
+    if (state?.kind === "vselect" && laneSel?.length === 1) {
+      const run = laneSel[0];
       const px =
-        (Math.abs(laneSel.b - laneSel.a) / Math.max(view.v1 - view.v0, 1e-9)) *
-        plotH;
+        ((run.b - run.a) / Math.max(view.v1 - view.v0, 1e-9)) * plotH;
       if (px < 3) setLaneSel(null);
       return;
     }
@@ -890,17 +945,17 @@ export function TracePanel({
     ) {
       // A click outside the selected region clears the selection; inside it,
       // or with none held, the click places the time cursor.
-      if (selection || laneSel) {
+      if (selection || laneSel?.length) {
         const t = toTime(event.clientX);
         const f = toLaneFrac(event.clientY);
         const inT =
           !selection ||
           (t >= Math.min(selection.a, selection.b) &&
             t <= Math.max(selection.a, selection.b));
+        // inside any marked run counts as inside
         const inF =
-          !laneSel ||
-          (f >= Math.min(laneSel.a, laneSel.b) &&
-            f <= Math.max(laneSel.a, laneSel.b));
+          !laneSel?.length ||
+          laneSel.some((run) => f >= run.a && f <= run.b);
         if (!(inT && inF)) {
           setSelection(null);
           setLaneSel(null);
@@ -913,11 +968,10 @@ export function TracePanel({
 
   function toggleGroupByRole() {
     setGroupByRole((on) => !on);
-    // The axis re-sorts, so a lane window or lane selection picked under the old
-    // order no longer names the same lanes -- a run that is contiguous in one
-    // order is scattered in the other, so there is no honest band to carry over,
-    // a focused block included. Hand back the whole axis and keep the time
-    // window, which still means what it did. Picking the block again re-zooms.
+    // The axis re-sorts, so a hand-dragged band no longer names the same lanes:
+    // a run that is contiguous in one order is scattered in the other. Drop it
+    // and hand back the whole axis, keeping the time window, which still means
+    // what it did. A picked block is re-marked run by run by its own effect.
     setView((v) => ({ ...v, v0: 0, v1: 1 }));
     setLaneSel(null);
     setHover(null);

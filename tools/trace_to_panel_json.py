@@ -18,6 +18,7 @@ and the output honestly covers only the sampled threads — rerun with
     python3 tools/trace_to_panel_json.py <report.json> <out.json> [--stride 32]
 """
 import argparse
+import collections
 import json
 import os
 
@@ -99,6 +100,51 @@ def main():
 
     intervals.sort(key=lambda iv: (iv[0], iv[2]))
 
+    # Which stripe of a lane's row each scope draws on. Two scopes live at the
+    # same moment on one lane cannot share a stripe, which is a graph colouring
+    # over the scopes -- done per scope, not per interval, because a row at warp
+    # or block level folds hundreds of lanes onto itself and a stripe only means
+    # something there if every lane puts the same scope on it. Colouring in
+    # order of falling total duration puts the long scope (the mainloop a run of
+    # short ones nests inside) on the first stripe. The panel derives this
+    # itself when it is missing, so an older bundle still stripes.
+    overlaps = set()
+    spent = collections.Counter()
+    self_overlap = False
+    per_lane = collections.defaultdict(list)
+    for lane, scope_id, start, dur in intervals:
+        per_lane[lane].append((start, dur, scope_id))
+    for events in per_lane.values():
+        live = []  # (ends, scope_id), already start-ascending
+        for start, dur, scope_id in events:
+            spent[scope_id] += dur
+            live = [entry for entry in live if entry[0] > start]
+            for _, other in live:
+                if other == scope_id:
+                    self_overlap = True
+                else:
+                    overlaps.add((min(other, scope_id), max(other, scope_id)))
+            live.append((start + dur, scope_id))
+
+    if self_overlap:
+        # a scope overlapping itself has no one stripe to sit on; leave it off
+        print("! a scope overlaps itself; stripes left flat")
+        stripe_of = {sid: 0 for sid in scopes}
+    else:
+        # built up as we go: only an already-coloured scope can claim a stripe,
+        # or the first scope would see every other one sitting on stripe 0
+        stripe_of = {}
+        for sid in sorted(scopes, key=lambda s: (-spent[s], s)):
+            taken = {
+                stripe_of[other]
+                for other in stripe_of
+                if (min(other, sid), max(other, sid)) in overlaps
+            }
+            stripe = 0
+            while stripe in taken:
+                stripe += 1
+            stripe_of[sid] = stripe
+
     # Does each kept thread stand for the stride's worth of threads after it?
     lane_repeat = args.stride
     diverged = None
@@ -131,7 +177,12 @@ def main():
         "laneRepeat": lane_repeat,
         "totalThreads": analysis["n_threads"],
         "scopes": [
-            {"id": sid, "label": label, **({"role": roles[label]} if label in roles else {})}
+            {
+                "id": sid,
+                "label": label,
+                **({"role": roles[label]} if label in roles else {}),
+                "stripe": stripe_of[sid],
+            }
             for sid, label in sorted(scopes.items())
         ],
         "lanes": lanes,
@@ -144,6 +195,8 @@ def main():
         json.dump(out, fh, separators=(",", ":"))
 
     print(f"lanes     : {len(lanes)}  (each stands for {lane_repeat} thread(s))")
+    print(f"stripes   : {max(stripe_of.values()) + 1}  "
+          f"(scopes that overlap get one each)")
     print(f"intervals : {len(intervals)}")
     print(f"out       : {args.out}  ({os.path.getsize(args.out) / 1e6:.2f} MB)")
 

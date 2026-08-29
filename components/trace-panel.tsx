@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  assignScopeStripes,
   buildLaneRows,
   formatTime,
   hasWarpRoles,
@@ -34,6 +42,7 @@ const AXIS_H = 26; // time axis strip along the bottom
 const AXIS_W = 54; // lane axis gutter on the left
 const MIN_ROW_PX = 2.2; // below this a level is too dense to draw
 const MIN_MARK_PX = 3; // a marked run thinner than this would vanish
+const MIN_STRIPE_PX = 2.5; // below this a stripe is worse than the overlap
 const PAD_TOP = 8;
 
 const FILM = "#fdfdfd"; // clear film
@@ -143,6 +152,56 @@ function makeGrain(): HTMLCanvasElement {
   return tile;
 }
 
+/** A checkbox in the toolbar's idiom: a filled box, a tick, and a label. */
+function CheckToggle({
+  on,
+  onToggle,
+  title,
+  children,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onToggle}
+      title={title}
+      className={`mr-1 inline-flex h-6 items-center gap-1.5 rounded border px-2 transition-colors ${
+        on
+          ? "border-muted/50 text-ink"
+          : "border-line text-ink-soft hover:border-muted/50 hover:text-ink"
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`grid h-3 w-3 shrink-0 place-items-center rounded-[2px] border ${
+          on ? "border-ink bg-ink" : "border-line"
+        }`}
+      >
+        {on && (
+          <svg
+            viewBox="0 0 10 10"
+            className="h-2 w-2"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M2 5.2 4.2 7.4 8 2.8" />
+          </svg>
+        )}
+      </span>
+      {children}
+    </button>
+  );
+}
+
 export function TracePanel({
   data,
   focus,
@@ -168,6 +227,11 @@ export function TracePanel({
     () => laneSequence(data, laneOrder),
     [data, laneOrder],
   );
+  // Phases that run at once on one thread print over each other unless the row
+  // is split into a stripe apiece. Offered only when something does overlap.
+  const stripes = useMemo(() => assignScopeStripes(data), [data]);
+  const [splitOverlap, setSplitOverlap] = useState(true);
+  const stripeCount = splitOverlap ? stripes.count : 1;
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -296,10 +360,21 @@ export function TracePanel({
     for (const level of levels) {
       const candidate = rowsByLevel.get(level);
       if (!candidate) continue;
-      if (plotH / (span * candidate.count) >= MIN_ROW_PX) return candidate;
+      if (plotH / (span * candidate.count) >= MIN_ROW_PX * stripeCount) {
+        return candidate;
+      }
     }
     return rowsByLevel.get(levels[levels.length - 1]) as LaneRows;
-  }, [levels, rowsByLevel, plotH, view.v0, view.v1]);
+  }, [levels, rowsByLevel, plotH, view.v0, view.v1, stripeCount]);
+
+  // How many stripes a row actually gets. Even the coarsest level can run out
+  // of pixels, and a stripe too thin to see is worse than the overlap it fixes,
+  // so the row goes back to printing the phases over each other.
+  const stripeN = useMemo(() => {
+    const bandH =
+      (plotH / (Math.max(view.v1 - view.v0, 1e-9) * rows.count)) * rows.span;
+    return bandH / stripeCount >= MIN_STRIPE_PX ? stripeCount : 1;
+  }, [plotH, view.v0, view.v1, rows, stripeCount]);
 
   useEffect(() => {
     const element = wrapRef.current;
@@ -393,7 +468,8 @@ export function TracePanel({
     const stampAlpha = Math.min(1, 1.25 / fold);
     const scopeIndex = new Map(data.scopes.map((s, i) => [s.id, i]));
     const bandH = rowH * rows.span;
-    const barH = bandH > 4 ? bandH - 1 : bandH;
+    const stripeH = bandH / stripeN;
+    const barH = stripeH > 4 ? stripeH - 1 : stripeH;
     const firstRow = Math.floor(v0 * rows.count) - rows.span;
     const lastRow = Math.ceil(v1 * rows.count) + rows.span;
     const left = AXIS_W;
@@ -401,6 +477,7 @@ export function TracePanel({
 
     for (const [scopeId, list] of intervalsByScope) {
       const si = scopeIndex.get(scopeId) ?? 0;
+      const dy = stripeN > 1 ? (stripes.of.get(scopeId) ?? 0) * stripeH : 0;
       sc.clearRect(0, 0, size.w, size.h);
       sc.fillStyle = inkAt(si, stampAlpha);
       for (const [lane, , start, dur] of list) {
@@ -410,7 +487,7 @@ export function TracePanel({
         const x = xOf(start);
         const w = Math.max(0.5, (dur / tSpan) * plotW);
         if (x > right || x + w < left) continue;
-        const y = yOf(row);
+        const y = yOf(row) + dy;
         if (y + barH < PAD_TOP || y > PAD_TOP + plotH) continue;
         const clippedX = Math.max(x, left);
         const clippedW = Math.min(x + w, right) - clippedX;
@@ -627,7 +704,9 @@ export function TracePanel({
     if (hover) {
       const x = xOf(hover.start);
       const w = Math.max(1.5, (hover.dur / tSpan) * plotW);
-      const y = yOf(rows.rowOf[hover.lane]);
+      const y =
+        yOf(rows.rowOf[hover.lane]) +
+        (stripeN > 1 ? (stripes.of.get(hover.scope) ?? 0) * stripeH : 0);
       ctx.strokeStyle = MARK;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x, y, w, Math.max(2, barH));
@@ -772,7 +851,7 @@ export function TracePanel({
       ctx.fillStyle = TICK;
       ctx.fillText(rows.label(row), AXIS_W - 8, y);
     }
-  }, [data, intervalsByScope, view, size, rows, selection, markRuns, markLanes, cursor, hover, plotH, plotW]);
+  }, [data, intervalsByScope, view, size, rows, stripes, stripeN, selection, markRuns, markLanes, cursor, hover, plotH, plotW]);
 
   /* ----------------------------------------------------------- interaction */
   const toTime = useCallback(
@@ -882,19 +961,30 @@ export function TracePanel({
       const py = clientY - rect.top;
       if (px < AXIS_W || py < PAD_TOP || py > PAD_TOP + plotH) return null;
       const t = view.t0 + ((px - AXIS_W) / plotW) * (view.t1 - view.t0);
-      const row = Math.floor(
-        (view.v0 + ((py - PAD_TOP) / plotH) * (view.v1 - view.v0)) * rows.count,
-      );
+      const at =
+        (view.v0 + ((py - PAD_TOP) / plotH) * (view.v1 - view.v0)) * rows.count;
+      const row = Math.floor(at);
       for (const [lane, scope, start, dur] of data.intervals) {
         const top = rows.rowOf[lane];
         if (row < top || row >= top + rows.span) continue;
+        // On a striped row the pointer names one stripe, so two phases live at
+        // the same moment are told apart by where they are drawn rather than by
+        // whichever interval the list happens to reach first.
+        if (stripeN > 1) {
+          const stripe = clamp(
+            Math.floor(((at - top) / rows.span) * stripeN),
+            0,
+            stripeN - 1,
+          );
+          if ((stripes.of.get(scope) ?? 0) !== stripe) continue;
+        }
         if (t >= start && t <= start + dur) {
           return { x: px, y: py, scope, lane, row, start, dur };
         }
       }
       return null;
     },
-    [data.intervals, rows, view, plotW, plotH],
+    [data.intervals, rows, stripes, stripeN, view, plotW, plotH],
   );
 
   function onPointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -1080,44 +1170,30 @@ export function TracePanel({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {roleGroupable && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={groupByRole}
-              onClick={toggleGroupByRole}
+            <CheckToggle
+              on={groupByRole}
+              onToggle={toggleGroupByRole}
               title={
                 groupByRole
                   ? "Lanes are bucketed by warp role; click for thread-id order"
                   : "Lanes are in thread-id order; click to bucket them by warp role"
               }
-              className={`mr-1 inline-flex h-6 items-center gap-1.5 rounded border px-2 transition-colors ${
-                groupByRole
-                  ? "border-muted/50 text-ink"
-                  : "border-line text-ink-soft hover:border-muted/50 hover:text-ink"
-              }`}
             >
-              <span
-                aria-hidden="true"
-                className={`grid h-3 w-3 shrink-0 place-items-center rounded-[2px] border ${
-                  groupByRole ? "border-ink bg-ink" : "border-line"
-                }`}
-              >
-                {groupByRole && (
-                  <svg
-                    viewBox="0 0 10 10"
-                    className="h-2 w-2"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2 5.2 4.2 7.4 8 2.8" />
-                  </svg>
-                )}
-              </span>
               Group by warp role
-            </button>
+            </CheckToggle>
+          )}
+          {stripes.count > 1 && (
+            <CheckToggle
+              on={splitOverlap}
+              onToggle={() => setSplitOverlap((on) => !on)}
+              title={
+                splitOverlap
+                  ? "Phases live at the same moment get a stripe each; click to print them over one another"
+                  : "Phases live at the same moment print over one another; click to give each a stripe"
+              }
+            >
+              Split overlaps
+            </CheckToggle>
           )}
           <span className="pr-2">
             {rows.level}

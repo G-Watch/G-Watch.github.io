@@ -16,6 +16,11 @@ export interface TraceScope {
   id: number;
   label: string;
   role?: string;
+  /**
+   * Which stripe of a lane's row this scope draws on, when the converter has
+   * worked it out. Derived at load when absent — see assignScopeStripes.
+   */
+  stripe?: number;
 }
 
 /** One traced thread, and the hardware groupings it rolls up into. */
@@ -256,6 +261,93 @@ export function laneRuns(
   });
   if (from >= 0) runs.push({ a: from / seq.length, b: 1 });
   return runs;
+}
+
+/**
+ * Which stripe of a lane's row each scope draws on, so that two phases running
+ * at once on one thread are read side by side instead of printed over each
+ * other.
+ *
+ * Scopes that are ever live at the same moment on the same lane cannot share a
+ * stripe, which is a graph colouring over the scopes. It is done per scope
+ * rather than per interval on purpose: a row at warp or block level folds
+ * hundreds of lanes onto itself, and a stripe only means something there if
+ * every lane puts the same scope on it.
+ *
+ * Colouring greedily in order of falling total duration reaches the fewest
+ * stripes the overlap allows on every panel published so far, and puts the long
+ * scope — the mainloop that a run of short ones nests inside — on the first
+ * stripe.
+ */
+export interface ScopeStripes {
+  /** Stripe index per scope id. */
+  of: Map<number, number>;
+  /** How many stripes a row divides into; 1 when nothing ever overlaps. */
+  count: number;
+}
+
+export function assignScopeStripes(data: TraceData): ScopeStripes {
+  const of = new Map<number, number>();
+  // the converter can carry the assignment, which costs nothing to trust
+  if (data.scopes.length && data.scopes.every((s) => s.stripe !== undefined)) {
+    for (const scope of data.scopes) of.set(scope.id, scope.stripe as number);
+    return { of, count: Math.max(...of.values(), 0) + 1 };
+  }
+
+  // one sweep per lane: what is live when an interval opens overlaps it
+  const byLane = new Map<number, TraceInterval[]>();
+  for (const interval of data.intervals) {
+    const at = byLane.get(interval[0]);
+    if (at) at.push(interval);
+    else byLane.set(interval[0], [interval]);
+  }
+  const overlaps = new Set<string>();
+  const spent = new Map<number, number>();
+  let selfOverlap = false;
+  for (const list of byLane.values()) {
+    // the converter emits them lane-major and start-ascending; sort only if
+    // some other producer did not
+    let sorted = true;
+    for (let i = 1; i < list.length && sorted; i++) {
+      if (list[i][2] < list[i - 1][2]) sorted = false;
+    }
+    const order = sorted ? list : [...list].sort((p, q) => p[2] - q[2]);
+    const live: [number, number][] = []; // [ends, scope]
+    for (const [, scope, start, dur] of order) {
+      spent.set(scope, (spent.get(scope) ?? 0) + dur);
+      for (let i = live.length - 1; i >= 0; i--) {
+        if (live[i][0] <= start) live.splice(i, 1);
+      }
+      for (const [, other] of live) {
+        if (other === scope) selfOverlap = true;
+        else overlaps.add(other < scope ? `${other},${scope}` : `${scope},${other}`);
+      }
+      live.push([start + dur, scope]);
+    }
+  }
+
+  // A scope that overlaps itself has no one stripe to sit on, so the whole
+  // device is off rather than quietly wrong. Nothing captured so far does this.
+  if (selfOverlap) {
+    for (const scope of data.scopes) of.set(scope.id, 0);
+    return { of, count: 1 };
+  }
+
+  const order = [...data.scopes].sort(
+    (p, q) => (spent.get(q.id) ?? 0) - (spent.get(p.id) ?? 0) || p.id - q.id,
+  );
+  for (const scope of order) {
+    const taken = new Set<number>();
+    for (const [other, stripe] of of) {
+      const key =
+        other < scope.id ? `${other},${scope.id}` : `${scope.id},${other}`;
+      if (overlaps.has(key)) taken.add(stripe);
+    }
+    let stripe = 0;
+    while (taken.has(stripe)) stripe++;
+    of.set(scope.id, stripe);
+  }
+  return { of, count: Math.max(...of.values(), 0) + 1 };
 }
 
 /**

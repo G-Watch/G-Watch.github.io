@@ -167,7 +167,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(2, 1024, 8, 128), bf16",
+      "  # B=2, S=1024, H=8, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -203,7 +203,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(4, 1024, 16, 128), bf16",
+      "  # B=4, S=1024, H=16, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -239,7 +239,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(1, 512, 4, 128), bf16",
+      "  # B=1, S=512, H=4, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -275,7 +275,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(1, 4096, 8, 128), bf16",
+      "  # B=1, S=4096, H=8, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -311,7 +311,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(8, 1024, 16, 128), bf16",
+      "  # B=8, S=1024, H=16, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -346,7 +346,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(2, 2048, 8, 128), bf16",
+      "  # B=2, S=2048, H=8, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -381,7 +381,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(1, 8192, 2, 128), bf16",
+      "  # B=1, S=8192, H=2, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",
@@ -416,7 +416,7 @@ const TRACE_RECORDS: TraceRecord[] = [
     },
     call: [
       "flash_attn_func(",
-      "  # BSHD=(16, 1024, 16, 128), bf16",
+      "  # B=16, S=1024, H=16, D=128, precision=bf16",
       "  q, k, v,",
       "  softmax_scale=None,    # 1/sqrt(128)",
       "  causal=False,",

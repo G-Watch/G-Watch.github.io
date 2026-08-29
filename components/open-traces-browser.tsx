@@ -300,9 +300,11 @@ function KernelColumn({
 
 /** One group of options inside a facet filter. */
 /**
- * The filterable parameters of a record: every `name=value` inside the literal
- * API call's parentheses, in call order; records without a call fall back to
- * the structured params.
+ * The filterable parameters of a record: every `name=value` in the literal API
+ * call, in call order; records without a call fall back to the structured
+ * params. Comment lines count on purpose — a call may carry parameters the API
+ * only takes positionally (tensor shapes, precision) as `# B=2, S=1024, ...`,
+ * and those filter exactly like real arguments.
  */
 /**
  * The call form in the Interface column, coloured.

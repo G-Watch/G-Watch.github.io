@@ -175,6 +175,34 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.33",
     trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b2s1024h8.json",
   },
+  // FlashAttention-3 · sm90a · the multi-tile companion shape: 512 output tiles
+  // over the 132 persistent CTAs (3-4 tiles each), so every producer / consumer
+  // region repeats per tile and the inter-tile pipelining becomes visible
+  {
+    vendor: "Dao AILab",
+    software: "FlashAttention-3",
+    version: "3.0.0b1",
+    arch: "sm90a",
+    kernel: "flash_fwd_sm90 bf16 hdim128 tile 128x176",
+    params: {
+      api: "flash_attn_func",
+      batch: 4,
+      seqlen: 1024,
+      heads: 16,
+      head_dim: 128,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  q, k, v,            # (4, 1024, 16, 128) bf16",
+      "  causal=False",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b4s1024h16.json",
+  },
 ];
 
 /**

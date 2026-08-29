@@ -1185,77 +1185,27 @@ export function TracePanel({
             : "flex h-full min-h-0 flex-col"
         }
       >
-      <div className="flex items-center justify-between gap-4 pb-2 text-xs text-muted">
-        <div className="flex flex-col gap-y-1">
-          {groupScopesByRole(data.scopes).map((group) => (
-            <div
-              key={group.role ?? "\u0000ungrouped"}
-              className="flex flex-col gap-y-0.5"
-            >
-              {group.role && (
-                <span className="font-medium text-muted/80">{group.role}</span>
-              )}
-              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                {group.entries.map(({ scope, index }) => (
-                  <span key={scope.id} className="flex items-center gap-1.5">
-                    <span
-                      className="block h-2.5 w-4 rounded-[1px] border border-line"
-                      style={{ backgroundColor: legendInk(index) }}
-                      aria-hidden="true"
-                    />
-                    <span className="text-ink-soft">{scope.label}</span>
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {roleGroupable && (
-            <CheckToggle
-              on={groupByRole}
-              onToggle={toggleGroupByRole}
-              title={
-                groupByRole
-                  ? "Lanes are bucketed by warp role; click for thread-id order"
-                  : "Lanes are in thread-id order; click to bucket them by warp role"
-              }
-            >
-              Group by warp role
-            </CheckToggle>
-          )}
-          {stripes.count > 1 && (
-            <CheckToggle
-              on={splitOverlap}
-              onToggle={() => setSplitOverlap((on) => !on)}
-              title={
-                splitOverlap
-                  ? "Phases live at the same moment get a stripe each; click to print them over one another"
-                  : "Phases live at the same moment print over one another; click to give each a stripe"
-              }
-            >
-              Split overlaps
-            </CheckToggle>
-          )}
-          {data.lanes.length * Math.max(1, data.laneRepeat) <
-            data.totalThreads && (
-            <span className="pr-2 text-muted/70">
-              {`1/${data.sampledEvery} sampled`}
-            </span>
-          )}
-          {/* Zooming lives on the wheel -- cmd for time, option for lanes, a
-              bare wheel pans, double click resets -- so the only button worth
-              its space is the one that has no gesture. */}
-          <button
-            type="button"
-            onClick={() => setFullscreen((on) => !on)}
-            aria-label={fullscreen ? "exit fullscreen" : "fullscreen"}
-            title={fullscreen ? "Leave fullscreen" : "Fullscreen"}
-            className={`${control} ml-1`}
+      <div className="flex flex-col gap-y-1 pb-2 text-xs text-muted">
+        {groupScopesByRole(data.scopes).map((group) => (
+          <span
+            key={group.role ?? "\u0000ungrouped"}
+            className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5"
           >
-            {fullscreen ? "⤡" : "⤢"}
-          </button>
-        </div>
+            {group.role && (
+              <span className="font-medium text-muted/80">{group.role}</span>
+            )}
+            {group.entries.map(({ scope, index }) => (
+              <span key={scope.id} className="flex items-center gap-1.5">
+                <span
+                  className="block h-2.5 w-4 rounded-[1px] border border-line"
+                  style={{ backgroundColor: legendInk(index) }}
+                  aria-hidden="true"
+                />
+                <span className="text-ink-soft">{scope.label}</span>
+              </span>
+            ))}
+          </span>
+        ))}
       </div>
 
       <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -1304,6 +1254,55 @@ export function TracePanel({
             </dl>
           </div>
         )}
+      </div>
+
+      {/* Controls sit under the plot: the legend is what you read before it,
+          these are what you reach for after. */}
+      <div className="flex items-center justify-end gap-1 pt-2 text-xs text-muted">
+        {roleGroupable && (
+          <CheckToggle
+            on={groupByRole}
+            onToggle={toggleGroupByRole}
+            title={
+              groupByRole
+                ? "Lanes are bucketed by warp role; click for thread-id order"
+                : "Lanes are in thread-id order; click to bucket them by warp role"
+            }
+          >
+            Group by warp role
+          </CheckToggle>
+        )}
+        {stripes.count > 1 && (
+          <CheckToggle
+            on={splitOverlap}
+            onToggle={() => setSplitOverlap((on) => !on)}
+            title={
+              splitOverlap
+                ? "Phases live at the same moment get a stripe each; click to print them over one another"
+                : "Phases live at the same moment print over one another; click to give each a stripe"
+            }
+          >
+            Split overlaps
+          </CheckToggle>
+        )}
+        {data.lanes.length * Math.max(1, data.laneRepeat) <
+          data.totalThreads && (
+          <span className="pr-2 text-muted/70">
+            {`1/${data.sampledEvery} sampled`}
+          </span>
+        )}
+        {/* Zooming lives on the wheel -- cmd for time, option for lanes, a
+            bare wheel pans, double click resets -- so the only button worth
+            its space is the one that has no gesture. */}
+        <button
+          type="button"
+          onClick={() => setFullscreen((on) => !on)}
+          aria-label={fullscreen ? "exit fullscreen" : "fullscreen"}
+          title={fullscreen ? "Leave fullscreen" : "Fullscreen"}
+          className={`${control} ml-1`}
+        >
+          {fullscreen ? "⤡" : "⤢"}
+        </button>
       </div>
       </div>
     </>

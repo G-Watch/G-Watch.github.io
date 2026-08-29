@@ -9,7 +9,10 @@ export function SiteFooter({ lang }: { lang: Locale }) {
 
   return (
     <footer className="mt-12 border-t border-line">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-8">
+      {/* Weighted low: the last line of a page wants more room under it than
+          over it, and on a full-height page this band ends at the viewport's
+          own edge, where 16px reads as a crop rather than a margin. */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 pb-9 pt-6 sm:flex-row sm:items-end sm:justify-between sm:gap-8 sm:px-8">
         <div>
           <Brand size="sm" />
           <p className="mt-1 text-sm text-muted">{content.footerNote}</p>

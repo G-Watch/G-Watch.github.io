@@ -151,7 +151,7 @@ const TRACE_RECORDS: TraceRecord[] = [
   // FlashAttention-3 · sm90a · warp-specialized TMA + wgmma attention forward,
   // driven through the package's own flash_attn_func
   {
-    vendor: "Dao AILab",
+    vendor: "NVIDIA",
     software: "FlashAttention-3",
     version: "3.0.0b1",
     arch: "sm90a",
@@ -179,7 +179,7 @@ const TRACE_RECORDS: TraceRecord[] = [
   // over the 132 persistent CTAs (3-4 tiles each), so every producer / consumer
   // region repeats per tile and the inter-tile pipelining becomes visible
   {
-    vendor: "Dao AILab",
+    vendor: "NVIDIA",
     software: "FlashAttention-3",
     version: "3.0.0b1",
     arch: "sm90a",

@@ -29,6 +29,9 @@ def main():
     ap.add_argument("--stride", type=int, default=32,
                     help="keep every Nth global thread id")
     ap.add_argument("--kernel", default=None, help="override the kernel name")
+    ap.add_argument("--sm-dispatch", default=None,
+                    help="JSON object mapping block ids to SM ids, shown in the "
+                         "SM dispatching view")
     ap.add_argument("--roles", default=None,
                     help="JSON object mapping scope labels to warp-role names, "
                          "carried into each scope for the legend's role groups")
@@ -133,8 +136,8 @@ def main():
         ],
         "lanes": lanes,
         "intervals": intervals,
-        # block (CTA) id -> the SM it ran on, straight from the capture
-        "smDispatch": {str(k): v for k, v in (run.get("sm_dispatch") or {}).items()},
+        # block (CTA) id -> the SM it ran on, from the caller's own capture
+        "smDispatch": json.loads(args.sm_dispatch) if args.sm_dispatch else {},
     }
 
     with open(args.out, "w", encoding="utf8") as fh:

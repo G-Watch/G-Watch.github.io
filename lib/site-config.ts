@@ -174,7 +174,7 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "Reinvent the GPU profiler for AI agents",
         subhead:
-          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring intra-kernel tracing (Xtrace), binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
+          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring binary-level intra-kernel tracing (Xtrace), binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
         primaryCta: { label: "Read the docs", href: "/docs/" },
         secondaryCta: {
           label: "Quickstart",
@@ -270,7 +270,7 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "为 AI Agent 重造 GPU Profiler",
         subhead:
-          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含核内追踪 (Xtrace)、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
+          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含指令级别的核内追踪 (Xtrace)、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
         primaryCta: { label: "阅读文档", href: "/docs/" },
         secondaryCta: {
           label: "快速开始",

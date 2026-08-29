@@ -44,6 +44,7 @@ const MIN_ROW_PX = 2.2; // below this a level is too dense to draw
 const MIN_MARK_PX = 3; // a marked run thinner than this would vanish
 const MIN_STRIPE_PX = 2.5; // below this a stripe is worse than the overlap
 const DRAG_AXIS_PX = 5; // travel before a plot drag commits to an axis
+const GRAB_PX = 8; // how near an axis press has to be to take an edge
 const PAD_TOP = 8;
 
 const FILM = "#fdfdfd"; // clear film
@@ -287,6 +288,8 @@ export function TracePanel({
     [laneSeq],
   );
   const [cursor, setCursor] = useState<number | null>(null);
+  // Which axis edge the pointer is over, so the canvas can say it is grabbable.
+  const [onEdge, setOnEdge] = useState<null | "time" | "lane">(null);
   const [hover, setHover] = useState<{
     x: number;
     y: number;
@@ -332,7 +335,11 @@ export function TracePanel({
   const drag = useRef<
     | { kind: "pan"; x: number; y: number; view: View }
     | { kind: "select"; from: number }
-    | { kind: "vselect"; from: number }
+    /**
+     * `keep` holds the lanes of every run the drag is not editing, so taking one
+     * edge of a mark split across the role bands moves that run alone.
+     */
+    | { kind: "vselect"; from: number; keep?: Set<number> }
     /**
      * A drag begun on the plot itself. It measures rather than pans, and which
      * axis it measures is not known until it has travelled far enough to say:
@@ -1017,6 +1024,50 @@ export function TracePanel({
     return () => canvas.removeEventListener("wheel", onWheel);
   }, [toTime, zoomTime, zoomLanes, view, plotH, plotW, data.span]);
 
+  /**
+   * The edge of the time selection an axis press lands on, with the opposite
+   * edge as the anchor to drag against. Null when there is nothing to take
+   * hold of, and the press starts a fresh band instead.
+   */
+  const grabTimeEdge = useCallback(
+    (px: number) => {
+      if (!selection) return null;
+      const lo = Math.min(selection.a, selection.b);
+      const hi = Math.max(selection.a, selection.b);
+      const xOfT = (t: number) =>
+        AXIS_W +
+        ((t - view.t0) / Math.max(view.t1 - view.t0, 1e-9)) * plotW;
+      const toLo = Math.abs(xOfT(lo) - px);
+      const toHi = Math.abs(xOfT(hi) - px);
+      if (Math.min(toLo, toHi) > GRAB_PX) return null;
+      return { anchor: toLo <= toHi ? hi : lo };
+    },
+    [selection, view, plotW],
+  );
+
+  /** The same for the lane axis, naming the run the edge belongs to. */
+  const grabLaneEdge = useCallback(
+    (py: number) => {
+      if (!markRuns?.length) return null;
+      const yOfF = (f: number) =>
+        PAD_TOP + ((f - view.v0) / Math.max(view.v1 - view.v0, 1e-9)) * plotH;
+      let best: { away: number; anchor: number; run: LaneRun } | null = null;
+      for (const run of markRuns) {
+        for (const [edge, anchor] of [
+          [run.a, run.b],
+          [run.b, run.a],
+        ]) {
+          const away = Math.abs(yOfF(edge) - py);
+          if (away <= GRAB_PX && (!best || away < best.away)) {
+            best = { away, anchor, run };
+          }
+        }
+      }
+      return best;
+    },
+    [markRuns, view, plotH],
+  );
+
   /** The interval under the pointer, or null over film. */
   const hitTest = useCallback(
     (clientX: number, clientY: number) => {
@@ -1063,13 +1114,27 @@ export function TracePanel({
     // range. Panning moves to the middle button or option, and is on the wheel
     // either way.
     if (x < AXIS_W && y <= PAD_TOP + plotH) {
-      const from = toLaneFrac(event.clientY);
-      drag.current = { kind: "vselect", from };
-      setMarkLanes(lanesInBand(from, from));
+      // on an edge of the mark, take it and drag against its opposite; the run
+      // it belongs to is the only one that moves
+      const grab = grabLaneEdge(y);
+      if (grab && markLanes) {
+        const keep = new Set(markLanes);
+        for (const lane of lanesInBand(grab.run.a, grab.run.b)) keep.delete(lane);
+        drag.current = { kind: "vselect", from: grab.anchor, keep };
+      } else {
+        const from = toLaneFrac(event.clientY);
+        drag.current = { kind: "vselect", from };
+        setMarkLanes(lanesInBand(from, from));
+      }
     } else if (y > PAD_TOP + plotH) {
-      const from = toTime(event.clientX);
-      drag.current = { kind: "select", from };
-      setSelection({ a: from, b: from });
+      const grab = grabTimeEdge(x);
+      if (grab) {
+        drag.current = { kind: "select", from: grab.anchor };
+      } else {
+        const from = toTime(event.clientX);
+        drag.current = { kind: "select", from };
+        setSelection({ a: from, b: from });
+      }
     } else if (
       event.button === 1 ||
       event.altKey ||
@@ -1100,12 +1165,23 @@ export function TracePanel({
 
   function onPointerLeave() {
     setHover(null);
+    setOnEdge(null);
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
     const state = drag.current;
     if (!state) {
       setHover(hitTest(event.clientX, event.clientY));
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x < AXIS_W && y <= PAD_TOP + plotH) {
+        setOnEdge(grabLaneEdge(y) ? "lane" : null);
+      } else if (y > PAD_TOP + plotH) {
+        setOnEdge(grabTimeEdge(x) ? "time" : null);
+      } else {
+        setOnEdge(null);
+      }
       return;
     }
     if (state.kind === "select") {
@@ -1113,7 +1189,9 @@ export function TracePanel({
       return;
     }
     if (state.kind === "vselect") {
-      setMarkLanes(lanesInBand(state.from, toLaneFrac(event.clientY)));
+      const band = lanesInBand(state.from, toLaneFrac(event.clientY));
+      if (state.keep) for (const lane of state.keep) band.add(lane);
+      setMarkLanes(band);
       return;
     }
     if (state.kind === "plot") {
@@ -1154,6 +1232,11 @@ export function TracePanel({
           Math.max(view.t1 - view.t0, 1e-9)) *
         plotW;
       if (px < 3) setSelection(null);
+      return;
+    }
+    if (state?.kind === "vselect" && state.keep) {
+      // editing one run of a mark: it is gone only if nothing at all is left
+      if (!markLanes?.size) setMarkLanes(null);
       return;
     }
     if (state?.kind === "vselect") {
@@ -1281,7 +1364,16 @@ export function TracePanel({
       <div ref={wrapRef} className="relative min-h-0 flex-1">
         <canvas
           ref={canvasRef}
-          style={{ width: size.w, height: size.h }}
+          style={{
+            width: size.w,
+            height: size.h,
+            cursor:
+              onEdge === "time"
+                ? "ew-resize"
+                : onEdge === "lane"
+                  ? "ns-resize"
+                  : undefined,
+          }}
           className="block touch-none select-none"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

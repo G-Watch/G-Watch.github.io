@@ -172,7 +172,7 @@ export const siteConfig: SiteConfig = {
         "G-Watch is a toolbox for agentic GPU/TPU kernel optimization. It offers rich profiling on NVIDIA and AMD GPUs and Google TPUs, plus program-analysis tools for inspecting compiler-generated kernel binaries.",
       hero: {
         eyebrow: "",
-        headline: "See inside your GPU kernels",
+        headline: "Reinvent the GPU profiler for AI agents",
         subhead:
           "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring intra-kernel tracing (Xtrace) & profiling, SASS binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
         primaryCta: { label: "Read the docs", href: "/docs/" },
@@ -268,7 +268,7 @@ export const siteConfig: SiteConfig = {
         "G-Watch 是一个面向智能体（agent）的 GPU/TPU kernel 优化工具箱。它在 NVIDIA、AMD GPU 与 Google TPU 上提供丰富的性能剖析能力，并配备用于检视编译器生成的 kernel 二进制的程序分析工具。",
       hero: {
         eyebrow: "",
-        headline: "细粒度分析 GPU Kernel",
+        headline: "为 AI Agent 重新发明 GPU Profiler",
         subhead:
           "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含内核级追踪 (Xtrace)、SASS 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
         primaryCta: { label: "阅读文档", href: "/docs/" },

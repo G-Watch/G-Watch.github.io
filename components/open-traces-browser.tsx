@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   NAV_LEVELS,
   buildTraceTree,
@@ -303,6 +303,74 @@ function KernelColumn({
  * API call's parentheses, in call order; records without a call fall back to
  * the structured params.
  */
+/**
+ * The call form in the Interface column, coloured.
+ *
+ * The palette is github-light's, which is what `rehypeShiki` already prints the
+ * docs' code blocks in — so the one hue this otherwise graphite-monochrome
+ * theme admits is the hue it already admits, in the same places.
+ *
+ * The grammar here is narrow and known: these calls are authored in
+ * lib/open-traces.ts as `api(arg=value, ...)`, so a scanner over a handful of
+ * shapes reads them exactly and costs nothing, where loading a highlighter for
+ * a table cell would cost a bundle.
+ */
+const CALL_INK = {
+  comment: "#6a737d",
+  fn: "#6f42c1",
+  arg: "#e36209",
+  value: "#005cc5",
+  keyword: "#d73a49",
+} as const;
+
+const CALL_TOKEN = new RegExp(
+  [
+    "(#[^\\n]*)", // trailing note — swallows the line, numbers inside included
+    "([A-Za-z_]\\w*)(?=\\s*\\()", // the call being made
+    "([A-Za-z_]\\w*)(?=\\s*=)", // an argument's name
+    "\\b(True|False|None|nullptr|NULL)\\b",
+    "\\b(\\d+(?:\\.\\d+)?[fFuUlL]*)\\b", // 512, 1.0f
+    "\\b([A-Z][A-Z0-9_]{2,})\\b", // CUBLAS_OP_N, NHWC
+  ].join("|"),
+  "g",
+);
+
+function CallCode({ source }: { source: string }) {
+  const parts: ReactNode[] = [];
+  let at = 0;
+  for (const match of source.matchAll(CALL_TOKEN)) {
+    const start = match.index ?? 0;
+    if (start > at) parts.push(source.slice(at, start));
+    const [text, comment, fn, arg, keyword] = match;
+    parts.push(
+      <span
+        key={start}
+        style={{
+          color: comment
+            ? CALL_INK.comment
+            : fn
+              ? CALL_INK.fn
+              : arg
+                ? CALL_INK.arg
+                : keyword
+                  ? CALL_INK.keyword
+                  : CALL_INK.value,
+          fontStyle: comment ? "italic" : undefined,
+        }}
+      >
+        {text}
+      </span>,
+    );
+    at = start + text.length;
+  }
+  if (at < source.length) parts.push(source.slice(at));
+  return (
+    <code className="block max-w-xl whitespace-pre-wrap break-words rounded-md border border-line-soft bg-paper-deep/50 px-2.5 py-2 font-mono text-xs leading-relaxed text-ink">
+      {parts}
+    </code>
+  );
+}
+
 function paramsOf(record: TraceRecord): Record<string, string> {
   if (!record.call) {
     return Object.fromEntries(
@@ -634,9 +702,7 @@ function TraceRow({
           className={`py-3 pr-4 text-sm ${i === 0 ? "text-ink" : "text-ink-soft"}`}
         >
           {column.id === "params" && record.call ? (
-            <code className="block max-w-xl whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-ink">
-              {record.call}
-            </code>
+            <CallCode source={record.call} />
           ) : (
             column.value(record) || "—"
           )}

@@ -49,6 +49,10 @@ const FILM = "#fdfdfd"; // clear film
 const GRID = "rgba(21,24,27,0.06)";
 const TICK = "#6b7278";
 const EDGE = "rgba(21,24,27,0.16)";
+const RULE = "rgba(21,24,27,0.15)"; // between one thread / warp and the next
+const RAIL = "rgba(21,24,27,0.13)"; // down the stripe an event block sits on
+const MIN_RULE_PX = 5; // a band shorter than this is all rule and no room
+const MIN_RAIL_PX = 6; // likewise for a stripe
 
 /**
  * Scope inks, assigned by scope order and never cycled: an artisanal print
@@ -530,6 +534,52 @@ export function TracePanel({
         ctx.globalCompositeOperation = "source-over";
         ctx.globalAlpha = 1;
       }
+    }
+
+    // Horizontal rules, over the exposure so a band that is fully printed still
+    // shows its edges: solid at every lane boundary, so one thread or warp reads
+    // apart from the next, and a dashed rail down the middle of each stripe, so
+    // the row an event block sits on can be followed across the width where the
+    // row is empty. Both are dropped when the band is too short to hold them --
+    // a rule every few pixels is a grey wash, not a boundary.
+    const firstBoundary =
+      Math.floor(Math.max(0, firstRow) / rows.span) * rows.span;
+    if (bandH >= MIN_RULE_PX) {
+      ctx.strokeStyle = RULE;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (
+        let row = firstBoundary;
+        row <= Math.min(rows.count, lastRow + rows.span);
+        row += rows.span
+      ) {
+        const y = Math.round(yOf(row)) + 0.5;
+        if (y < PAD_TOP || y > PAD_TOP + plotH) continue;
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
+      }
+      ctx.stroke();
+    }
+    if (stripeH >= MIN_RAIL_PX) {
+      ctx.save();
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = RAIL;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (
+        let row = firstBoundary;
+        row <= Math.min(rows.count, lastRow + rows.span);
+        row += rows.span
+      ) {
+        for (let stripe = 0; stripe < stripeN; stripe++) {
+          const y = Math.round(yOf(row) + (stripe + 0.5) * stripeH) + 0.5;
+          if (y < PAD_TOP || y > PAD_TOP + plotH) continue;
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
     }
 
     // Runs to mark down the lane axis; none means the whole plot is the band,
@@ -1125,16 +1175,6 @@ export function TracePanel({
           aria-hidden="true"
         />
       )}
-      {fullscreen && (
-        <button
-          type="button"
-          onClick={() => setFullscreen(false)}
-          aria-label="exit fullscreen"
-          className="fixed right-[calc(8vw+0.5rem)] top-[calc(9vh+0.4rem)] z-50 h-6 w-6 rounded border border-line bg-surface text-sm text-ink-soft transition-colors hover:border-muted/50 hover:text-ink"
-        >
-          ×
-        </button>
-      )}
       {/* The same node in both modes, so the canvas subtree never remounts:
           fullscreen only swaps the container's classes and lets the resize
           observer refit the plot to the lightbox. */}
@@ -1148,24 +1188,26 @@ export function TracePanel({
       <div className="flex items-center justify-between gap-4 pb-2 text-xs text-muted">
         <div className="flex flex-col gap-y-1">
           {groupScopesByRole(data.scopes).map((group) => (
-            <span
+            <div
               key={group.role ?? "\u0000ungrouped"}
-              className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5"
+              className="flex flex-col gap-y-0.5"
             >
               {group.role && (
                 <span className="font-medium text-muted/80">{group.role}</span>
               )}
-              {group.entries.map(({ scope, index }) => (
-                <span key={scope.id} className="flex items-center gap-1.5">
-                  <span
-                    className="block h-2.5 w-4 rounded-[1px] border border-line"
-                    style={{ backgroundColor: legendInk(index) }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-ink-soft">{scope.label}</span>
-                </span>
-              ))}
-            </span>
+              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                {group.entries.map(({ scope, index }) => (
+                  <span key={scope.id} className="flex items-center gap-1.5">
+                    <span
+                      className="block h-2.5 w-4 rounded-[1px] border border-line"
+                      style={{ backgroundColor: legendInk(index) }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-ink-soft">{scope.label}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
           ))}
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -1195,60 +1237,23 @@ export function TracePanel({
               Split overlaps
             </CheckToggle>
           )}
-          <span className="pr-2">
-            {rows.level}
-            {data.lanes.length * Math.max(1, data.laneRepeat) <
-              data.totalThreads && (
-              <span className="pl-1 text-muted/70">
-                {`· 1/${data.sampledEvery} sampled`}
-              </span>
-            )}
-          </span>
-          <span className="px-1 text-[11px]" aria-hidden="true">
-            ↔
-          </span>
+          {data.lanes.length * Math.max(1, data.laneRepeat) <
+            data.totalThreads && (
+            <span className="pr-2 text-muted/70">
+              {`1/${data.sampledEvery} sampled`}
+            </span>
+          )}
+          {/* Zooming lives on the wheel -- cmd for time, option for lanes, a
+              bare wheel pans, double click resets -- so the only button worth
+              its space is the one that has no gesture. */}
           <button
             type="button"
-            onClick={() => zoomTime(1.6, (view.t0 + view.t1) / 2)}
-            aria-label="zoom out, time"
-            className={`${control} w-6 px-0`}
-          >
-            −
-          </button>
-          <button
-            type="button"
-            onClick={() => zoomTime(0.625, (view.t0 + view.t1) / 2)}
-            aria-label="zoom in, time"
-            className={`${control} w-6 px-0`}
-          >
-            +
-          </button>
-          <span className="pl-2 pr-1 text-[11px]" aria-hidden="true">
-            ↕
-          </span>
-          <button
-            type="button"
-            onClick={() => zoomLanes(1.6, (view.v0 + view.v1) / 2)}
-            aria-label="zoom out, lanes"
-            className={`${control} w-6 px-0`}
-          >
-            −
-          </button>
-          <button
-            type="button"
-            onClick={() => zoomLanes(0.625, (view.v0 + view.v1) / 2)}
-            aria-label="zoom in, lanes"
-            className={`${control} w-6 px-0`}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={() => setFullscreen(true)}
-            aria-label="fullscreen"
+            onClick={() => setFullscreen((on) => !on)}
+            aria-label={fullscreen ? "exit fullscreen" : "fullscreen"}
+            title={fullscreen ? "Leave fullscreen" : "Fullscreen"}
             className={`${control} ml-1`}
           >
-            ⤢
+            {fullscreen ? "⤡" : "⤢"}
           </button>
         </div>
       </div>

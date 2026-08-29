@@ -120,11 +120,14 @@ export default async function HomePage({
               <p className="font-mono text-xs uppercase tracking-[0.25em] text-accent">
                 {hero.eyebrow}
               </p>
+              {/* Each layout sets its own ramp. Beside a showcase the headline
+                  only gets its share of the grid, so it is set a step down from
+                  the full-width layout's and stays one line there. */}
               <h1
-                className={`mt-6 font-serif text-4xl font-bold leading-tight tracking-tight text-ink ${
+                className={`mt-6 font-serif font-bold leading-tight tracking-tight text-ink ${
                   overlapMedia
-                    ? "mx-auto max-w-xl sm:text-5xl lg:mx-0 lg:max-w-none"
-                    : "mx-auto max-w-3xl sm:text-6xl"
+                    ? "mx-auto max-w-xl text-3xl sm:text-4xl lg:mx-0 lg:max-w-none"
+                    : "mx-auto max-w-3xl text-4xl sm:text-6xl"
                 }`}
               >
                 {hero.headline}

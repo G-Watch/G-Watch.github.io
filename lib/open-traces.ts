@@ -203,6 +203,90 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.33",
     trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b4s1024h16.json",
   },
+  // FlashAttention-3 · sm90a · the small-workload shape: 16 output tiles leave
+  // 116 of the 132 persistent CTAs with no work — the launch tail and the idle
+  // SMs show up directly in the dispatch grid
+  {
+    vendor: "NVIDIA",
+    software: "FlashAttention-3",
+    version: "3.0.0b1",
+    arch: "sm90a",
+    kernel: "flash_fwd_sm90 bf16 hdim128 tile 128x176",
+    params: {
+      api: "flash_attn_func",
+      batch: 1,
+      seqlen: 512,
+      heads: 4,
+      head_dim: 128,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  q, k, v,            # (1, 512, 4, 128) bf16",
+      "  causal=False",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b1s512h4.json",
+  },
+  // FlashAttention-3 · sm90a · the long-sequence shape: each tile's KV loop
+  // runs 23 in-loop iterations, so one mainloop stretches to ~44 µs and the
+  // producer's staging runs the whole tile alongside it
+  {
+    vendor: "NVIDIA",
+    software: "FlashAttention-3",
+    version: "3.0.0b1",
+    arch: "sm90a",
+    kernel: "flash_fwd_sm90 bf16 hdim128 tile 128x176",
+    params: {
+      api: "flash_attn_func",
+      batch: 1,
+      seqlen: 4096,
+      heads: 8,
+      head_dim: 128,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  q, k, v,            # (1, 4096, 8, 128) bf16",
+      "  causal=False",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b1s4096h8.json",
+  },
+  // FlashAttention-3 · sm90a · the large-batch shape: 1024 output tiles give
+  // every persistent CTA a run of 7-8 tiles back to back — the steady-state
+  // per-tile pipeline, repeated
+  {
+    vendor: "NVIDIA",
+    software: "FlashAttention-3",
+    version: "3.0.0b1",
+    arch: "sm90a",
+    kernel: "flash_fwd_sm90 bf16 hdim128 tile 128x176",
+    params: {
+      api: "flash_attn_func",
+      batch: 8,
+      seqlen: 1024,
+      heads: 16,
+      head_dim: 128,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  q, k, v,            # (8, 1024, 16, 128) bf16",
+      "  causal=False",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.33",
+    trace: "/traces/flash-attention-3-fwd-sm90-bf16-hdim128-b8s1024h16.json",
+  },
 ];
 
 /**

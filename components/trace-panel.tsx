@@ -185,19 +185,24 @@ export function TracePanel({
   // with the lane selection, so the block reads as a band with its thread range
   // named on both calipers. The time span stays whole.
   //
-  // A block is one contiguous run of threads, which role grouping splits across
-  // the role bands — zooming to that spread would drag every other block along
-  // with it. So a fresh pick drops to thread-id order when it has to, which the
-  // toggle then shows. Merely flipping the toggle while a block is focused
-  // re-reads the band in the new order instead, or the two would fight.
+  // Only a fresh pick does this. A block is one contiguous run of threads, and
+  // role grouping splits that run across the role bands, so a fresh pick drops
+  // to thread-id order where the block is the interval it actually is -- the
+  // toggle flips to show it. Re-reading the band after the order changed would
+  // instead mark the block as its first-to-last spread, which under role
+  // grouping holds most of the launch; and it would look right, because the
+  // window is set from the band, so the marked region covers the same two
+  // thirds of the plot however wide the band really is. Flipping the toggle
+  // releases the block instead, which is what the toggle already does.
   const pickedFocus = useRef<typeof focus>(null);
   useEffect(() => {
     if (!focus) return;
     const fresh = pickedFocus.current !== focus;
     pickedFocus.current = focus;
+    if (!fresh) return;
     const isBlock = (lane: TraceLane) => lane.block === focus.block;
     let band = laneBand(data, laneOrder, isBlock);
-    if (fresh && band && !band.whole && laneOrder === "role") {
+    if (band && !band.whole && laneOrder === "role") {
       const whole = laneBand(data, "tid", isBlock);
       if (whole?.whole) {
         setGroupByRole(false);
@@ -909,8 +914,10 @@ export function TracePanel({
   function toggleGroupByRole() {
     setGroupByRole((on) => !on);
     // The axis re-sorts, so a lane window or lane selection picked under the old
-    // order no longer names the same lanes. Hand back the whole axis and keep
-    // the time window, which still means what it did.
+    // order no longer names the same lanes -- a run that is contiguous in one
+    // order is scattered in the other, so there is no honest band to carry over,
+    // a focused block included. Hand back the whole axis and keep the time
+    // window, which still means what it did. Picking the block again re-zooms.
     setView((v) => ({ ...v, v0: 0, v1: 1 }));
     setLaneSel(null);
     setHover(null);

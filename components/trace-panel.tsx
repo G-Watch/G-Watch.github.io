@@ -124,7 +124,14 @@ function makeGrain(): HTMLCanvasElement {
   return tile;
 }
 
-export function TracePanel({ data }: { data: TraceData }) {
+export function TracePanel({
+  data,
+  focus,
+}: {
+  data: TraceData;
+  /** A block picked elsewhere (the SM dispatching grid); a fresh object re-zooms. */
+  focus?: { block: number } | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLCanvasElement | null>(null);
   const scopeLayerRef = useRef<HTMLCanvasElement | null>(null);
@@ -147,6 +154,25 @@ export function TracePanel({ data }: { data: TraceData }) {
     v0: 0,
     v1: 1,
   });
+
+  // an externally picked block zooms the lane axis to its lanes, full time span
+  useEffect(() => {
+    if (!focus) return;
+    let lo = data.lanes.length;
+    let hi = 0;
+    data.lanes.forEach((lane, index) => {
+      if (lane.block !== focus.block) return;
+      if (index < lo) lo = index;
+      if (index + 1 > hi) hi = index + 1;
+    });
+    if (hi <= lo) return;
+    setView({
+      t0: 0,
+      t1: data.span,
+      v0: lo / data.lanes.length,
+      v1: hi / data.lanes.length,
+    });
+  }, [focus, data]);
   const [selection, setSelection] = useState<{ a: number; b: number } | null>(
     null,
   );

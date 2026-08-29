@@ -19,6 +19,7 @@ import { withBasePath } from "@/lib/paths";
 import { normalizeTrace, type TraceData } from "@/lib/trace-format";
 import { TracePanel } from "./trace-panel";
 import { TraceStats } from "./trace-stats";
+import { TraceSmDispatch } from "./trace-sm-dispatch";
 
 /** Depth of the deepest sidebar level (arch); kernel has its own column. */
 const ARCH_DEPTH = NAV_LEVELS.length - 1;
@@ -700,6 +701,7 @@ function GhostRows({ columns }: { columns: Column[] }) {
 const KERNEL_TABS = [
   { id: "trace", label: "Trace" },
   { id: "stats", label: "Statistics" },
+  { id: "sm", label: "SM dispatching" },
 ] as const;
 type KernelTabId = (typeof KERNEL_TABS)[number]["id"];
 
@@ -708,6 +710,8 @@ function TraceView({ record }: { record: TraceRecord }) {
   const [data, setData] = useState<TraceData | null>(null);
   const [failed, setFailed] = useState(false);
   const [tab, setTab] = useState<KernelTabId>("trace");
+  // the block picked in the SM dispatching grid; a fresh object re-zooms the trace
+  const [focus, setFocus] = useState<{ block: number } | null>(null);
   const source = record.trace;
 
   useEffect(() => {
@@ -763,8 +767,20 @@ function TraceView({ record }: { record: TraceRecord }) {
     <>
       {tabBar}
       <div className="min-h-0 flex-1 rounded-b-xl border border-t-0 border-line bg-surface p-4">
-        {tab === "trace" && data ? <TracePanel key={source} data={data} /> : null}
+        {tab === "trace" && data ? (
+          <TracePanel key={source} data={data} focus={focus} />
+        ) : null}
         {tab === "stats" && data ? <TraceStats key={source} data={data} /> : null}
+        {tab === "sm" && data ? (
+          <TraceSmDispatch
+            key={source}
+            data={data}
+            onSelectBlock={(block) => {
+              setFocus({ block });
+              setTab("trace");
+            }}
+          />
+        ) : null}
       </div>
     </>
   );

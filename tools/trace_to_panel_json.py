@@ -133,6 +133,8 @@ def main():
         ],
         "lanes": lanes,
         "intervals": intervals,
+        # block (CTA) id -> the SM it ran on, straight from the capture
+        "smDispatch": {str(k): v for k, v in (run.get("sm_dispatch") or {}).items()},
     }
 
     with open(args.out, "w", encoding="utf8") as fh:

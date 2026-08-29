@@ -54,6 +54,8 @@ export interface TraceData {
   scopes: TraceScope[];
   lanes: TraceLane[];
   intervals: TraceInterval[];
+  /** Block (CTA) id -> the SM it ran on; empty when the capture had no SM ids. */
+  smDispatch: Record<string, number>;
 }
 
 /** Vertical granularities, finest first. */
@@ -203,6 +205,10 @@ export function normalizeTrace(raw: unknown): TraceData | null {
     scopes: data.scopes,
     lanes: data.lanes,
     intervals: data.intervals,
+    smDispatch:
+      typeof data.smDispatch === "object" && data.smDispatch !== null
+        ? data.smDispatch
+        : {},
   };
 }
 

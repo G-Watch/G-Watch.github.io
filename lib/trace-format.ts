@@ -136,8 +136,14 @@ export function hasWarpRoles(data: TraceData): boolean {
   return seen.size > 1;
 }
 
-/** Lane indices in display order. */
-function laneSequence(data: TraceData, order: LaneOrder): Int32Array {
+/**
+ * Lane indices in display order — the axis, top to bottom.
+ *
+ * This is the mapping a selection has to be carried through: a mark names the
+ * lanes it holds, and where those sit is whatever this says under the order
+ * currently drawn.
+ */
+export function laneSequence(data: TraceData, order: LaneOrder): Int32Array {
   const seq = new Int32Array(data.lanes.length);
   for (let i = 0; i < seq.length; i++) seq[i] = i;
   if (order === "tid") {
@@ -226,22 +232,22 @@ export interface LaneRun {
 /**
  * Every contiguous run a set of lanes forms in display order.
  *
- * This is how an outside caller (the SM dispatching grid picking a block)
- * marks those lanes wherever the axis happens to be sorted. A block's threads
- * are one run under "tid" order; role grouping cuts that run into one per warp
- * role, and marking the span from the first to the last would claim nearly the
- * whole launch, so each run is reported on its own.
+ * This is how a selection is drawn wherever the axis happens to be sorted: it
+ * holds a set of lanes, and this says which bands they occupy now. A block's
+ * threads are one run under "tid" order; role grouping cuts that run into one
+ * per warp role, and marking the span from the first to the last would claim
+ * nearly the whole launch, so each run is reported on its own.
  */
 export function laneRuns(
   data: TraceData,
   order: LaneOrder,
-  match: (lane: TraceLane) => boolean,
+  match: (lane: TraceLane, index: number) => boolean,
 ): LaneRun[] {
   const seq = laneSequence(data, order);
   const runs: LaneRun[] = [];
   let from = -1;
   seq.forEach((lane, at) => {
-    if (match(data.lanes[lane])) {
+    if (match(data.lanes[lane], lane)) {
       if (from < 0) from = at;
     } else if (from >= 0) {
       runs.push({ a: from / seq.length, b: at / seq.length });

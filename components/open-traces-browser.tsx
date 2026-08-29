@@ -695,13 +695,15 @@ function GhostRows({ columns }: { columns: Column[] }) {
  * ---------------------------------------------------------------------- */
 
 /**
- * The per-kernel views, one tab each. The trace timeline is the first; further
- * views (counters, source, notes, ...) register here and get a tab for free.
+ * The per-kernel views, one tab each. The execution trace is the first, with
+ * the SM dispatching grid next to it because picking a block there drives it;
+ * further views (counters, source, notes, ...) register here and get a tab for
+ * free.
  */
 const KERNEL_TABS = [
-  { id: "trace", label: "Trace" },
-  { id: "stats", label: "Statistics" },
+  { id: "trace", label: "Execution trace" },
   { id: "sm", label: "SM dispatching" },
+  { id: "stats", label: "Statistics" },
 ] as const;
 type KernelTabId = (typeof KERNEL_TABS)[number]["id"];
 

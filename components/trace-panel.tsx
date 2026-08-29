@@ -12,6 +12,7 @@ import {
   type LaneOrder,
   type LaneRows,
   type TraceData,
+  type TraceLane,
 } from "@/lib/trace-format";
 
 /**
@@ -164,16 +165,6 @@ export function TracePanel({
     v1: 1,
   });
 
-  // an externally picked block zooms the lane axis to its lanes, full time span.
-  // The band is read in the order the axis is currently drawn in: under role
-  // grouping a block's lanes are split across the role bands, so the band it
-  // spans is wide; under thread-id order they are contiguous and it is tight.
-  useEffect(() => {
-    if (!focus) return;
-    const band = laneBand(data, laneOrder, (lane) => lane.block === focus.block);
-    if (!band) return;
-    setView({ t0: 0, t1: data.span, v0: band.v0, v1: band.v1 });
-  }, [focus, data, laneOrder]);
   const [selection, setSelection] = useState<{ a: number; b: number } | null>(
     null,
   );
@@ -189,6 +180,42 @@ export function TracePanel({
     start: number;
     dur: number;
   } | null>(null);
+
+  // an externally picked block zooms the lane axis onto its lanes and marks them
+  // with the lane selection, so the block reads as a band with its thread range
+  // named on both calipers. The time span stays whole.
+  //
+  // A block is one contiguous run of threads, which role grouping splits across
+  // the role bands — zooming to that spread would drag every other block along
+  // with it. So a fresh pick drops to thread-id order when it has to, which the
+  // toggle then shows. Merely flipping the toggle while a block is focused
+  // re-reads the band in the new order instead, or the two would fight.
+  const pickedFocus = useRef<typeof focus>(null);
+  useEffect(() => {
+    if (!focus) return;
+    const fresh = pickedFocus.current !== focus;
+    pickedFocus.current = focus;
+    const isBlock = (lane: TraceLane) => lane.block === focus.block;
+    let band = laneBand(data, laneOrder, isBlock);
+    if (fresh && band && !band.whole && laneOrder === "role") {
+      const whole = laneBand(data, "tid", isBlock);
+      if (whole?.whole) {
+        setGroupByRole(false);
+        band = whole;
+      }
+    }
+    if (!band) return;
+    // a margin of a quarter of the band on each side keeps the calipers off the
+    // plot edge and leaves the neighbouring blocks visible for scale
+    const margin = (band.v1 - band.v0) / 4;
+    setLaneSel({ a: band.v0, b: band.v1 });
+    setView({
+      t0: 0,
+      t1: data.span,
+      v0: Math.max(0, band.v0 - margin),
+      v1: Math.min(1, band.v1 + margin),
+    });
+  }, [focus, data, laneOrder]);
   const drag = useRef<
     | { kind: "pan"; x: number; y: number; view: View }
     | { kind: "select"; from: number }

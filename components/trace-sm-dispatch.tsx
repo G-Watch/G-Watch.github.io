@@ -6,7 +6,7 @@ import { type TraceData } from "@/lib/trace-format";
 /**
  * Where the launch's blocks landed on the chip: one cell per SM, listing the
  * blocks the scheduler assigned to it. Clicking a block hands it back to the
- * trace view, which zooms its lane axis to that block.
+ * execution trace, which zooms its lane axis onto that block and marks it.
  */
 
 interface SmCell {
@@ -40,7 +40,6 @@ export function TraceSmDispatch({
   onSelectBlock: (block: number) => void;
 }) {
   const cells = useMemo(() => buildCells(data), [data]);
-  const nBlocks = Object.keys(data.smDispatch).length;
 
   if (!cells.length) {
     return (
@@ -51,15 +50,11 @@ export function TraceSmDispatch({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="text-xs text-muted">
-        {nBlocks} block{nBlocks === 1 ? "" : "s"} over {cells.length} SMs — each
-        cell is one SM; click a block to zoom the trace to its lanes.
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div
           className="grid gap-1.5"
-          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))" }}
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))" }}
         >
           {cells.map((cell) => (
             <div
@@ -81,9 +76,9 @@ export function TraceSmDispatch({
                       type="button"
                       onClick={() => onSelectBlock(block)}
                       className="rounded bg-accent-soft px-1.5 py-0.5 text-[0.65rem] font-medium text-accent-strong transition-colors hover:bg-accent-strong hover:text-surface"
-                      title={`zoom the trace to block ${block}`}
+                      title={`zoom the execution trace to block ${block}`}
                     >
-                      B{block}
+                      Block {block}
                     </button>
                   ))
                 ) : (

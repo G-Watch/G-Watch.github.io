@@ -218,25 +218,32 @@ export function buildLaneRows(
 }
 
 /**
- * Where each lane sits in display order, as a fraction of the axis. The lane
- * window is normalised [0,1], so this is what an outside caller (the SM
- * dispatching grid picking a block) needs to zoom to a set of lanes.
+ * Where a set of lanes sits in display order, as a fraction of the axis. The
+ * lane window is normalised [0,1], so this is what an outside caller (the SM
+ * dispatching grid picking a block) needs to zoom to those lanes.
+ *
+ * `whole` says the band holds nothing but the matched lanes. A block is one
+ * contiguous run of threads, so it is whole under "tid" order and split across
+ * the role bands under "role" — and a band that is not whole cannot be zoomed
+ * to without dragging every other block's lanes along with it.
  */
 export function laneBand(
   data: TraceData,
   order: LaneOrder,
   match: (lane: TraceLane) => boolean,
-): { v0: number; v1: number } | null {
+): { v0: number; v1: number; whole: boolean } | null {
   const seq = laneSequence(data, order);
   let lo = seq.length;
   let hi = 0;
+  let hits = 0;
   seq.forEach((lane, at) => {
     if (!match(data.lanes[lane])) return;
+    hits++;
     if (at < lo) lo = at;
     if (at + 1 > hi) hi = at + 1;
   });
   if (hi <= lo) return null;
-  return { v0: lo / seq.length, v1: hi / seq.length };
+  return { v0: lo / seq.length, v1: hi / seq.length, whole: hi - lo === hits };
 }
 
 /**

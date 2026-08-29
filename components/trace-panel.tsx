@@ -24,6 +24,7 @@ import {
   type TraceData,
   type TraceLane,
 } from "@/lib/trace-format";
+import { useKeptState } from "@/lib/view-state";
 
 /**
  * Intra-kernel trace panel: time on x, threads/warps/warpgroups on y.
@@ -211,10 +212,17 @@ function CheckToggle({
 export function TracePanel({
   data,
   focus,
+  stateKey,
 }: {
   data: TraceData;
   /** A block picked elsewhere (the SM dispatching grid); a fresh object re-zooms. */
   focus?: { block: number } | null;
+  /**
+   * Names this trace, so what the reader set up here survives a remount — a
+   * locale switch unmounts the whole tree, and coming back to a reset plot with
+   * the measurement gone is not what "switch language" should mean.
+   */
+  stateKey: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLCanvasElement | null>(null);
@@ -222,12 +230,12 @@ export function TracePanel({
   const wrapRef = useRef<HTMLDivElement>(null);
   const grainRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useKeptState(`${stateKey}:full`, false);
   // Lanes bucket by warp role by default — that is the reading a
   // warp-specialized kernel asks for. Turning it off gives the plain hardware
   // order, thread id ascending. Offered only when there is more than one role.
   const roleGroupable = useMemo(() => hasWarpRoles(data), [data]);
-  const [groupByRole, setGroupByRole] = useState(true);
+  const [groupByRole, setGroupByRole] = useKeptState(`${stateKey}:role`, true);
   const laneOrder: LaneOrder = roleGroupable && groupByRole ? "role" : "tid";
   const laneSeq = useMemo(
     () => laneSequence(data, laneOrder),
@@ -236,7 +244,10 @@ export function TracePanel({
   // Phases that run at once on one thread print over each other unless the row
   // is split into a stripe apiece. Offered only when something does overlap.
   const stripes = useMemo(() => assignScopeStripes(data), [data]);
-  const [splitOverlap, setSplitOverlap] = useState(true);
+  const [splitOverlap, setSplitOverlap] = useKeptState(
+    `${stateKey}:split`,
+    true,
+  );
   const stripeCount = splitOverlap ? stripes.count : 1;
 
   useEffect(() => {
@@ -246,23 +257,27 @@ export function TracePanel({
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
-  const [view, setView] = useState<View>({
+  }, [fullscreen, setFullscreen]);
+  const [view, setView] = useKeptState<View>(`${stateKey}:view`, () => ({
     t0: 0,
     t1: data.span,
     v0: 0,
     v1: 1,
-  });
+  }));
 
-  const [selection, setSelection] = useState<{ a: number; b: number } | null>(
-    null,
-  );
+  const [selection, setSelection] = useKeptState<{
+    a: number;
+    b: number;
+  } | null>(`${stateKey}:selection`, null);
   // The lane selection is the set of lanes it holds, not a stretch of the axis:
   // the axis re-sorts under the role toggle, and a band of screen would name
   // different threads afterwards. Where those lanes sit is derived, so the mark
   // follows the sort for free -- one run under thread-id order, one per warp
   // role under role grouping, ordered and disjoint either way.
-  const [markLanes, setMarkLanes] = useState<Set<number> | null>(null);
+  const [markLanes, setMarkLanes] = useKeptState<Set<number> | null>(
+    `${stateKey}:mark`,
+    null,
+  );
   const markRuns = useMemo(
     () =>
       markLanes
@@ -287,7 +302,10 @@ export function TracePanel({
     },
     [laneSeq],
   );
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [cursor, setCursor] = useKeptState<number | null>(
+    `${stateKey}:cursor`,
+    null,
+  );
   // Which axis edge the pointer is over, so the canvas can say it is grabbable.
   const [onEdge, setOnEdge] = useState<null | "time" | "lane">(null);
   const [hover, setHover] = useState<{
@@ -331,7 +349,7 @@ export function TracePanel({
     });
     setMarkLanes(lanes);
     setView({ t0: 0, t1: data.span, ...fitLanes(runs) });
-  }, [focus, data, laneOrder]);
+  }, [focus, data, laneOrder, setGroupByRole, setMarkLanes, setView]);
   const drag = useRef<
     | { kind: "pan"; x: number; y: number; view: View }
     | { kind: "select"; from: number }
@@ -958,7 +976,7 @@ export function TracePanel({
         return { ...prev, t0, t1: t0 + clamped };
       });
     },
-    [data.span],
+    [data.span, setView],
   );
 
   const zoomLanes = useCallback((factor: number, anchor: number) => {
@@ -969,7 +987,7 @@ export function TracePanel({
       v0 = clamp(v0, 0, 1 - span);
       return { ...prev, v0, v1: v0 + span };
     });
-  }, []);
+  }, [setView]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1022,7 +1040,7 @@ export function TracePanel({
     }
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [toTime, zoomTime, zoomLanes, view, plotH, plotW, data.span]);
+  }, [toTime, zoomTime, zoomLanes, view, plotH, plotW, data.span, setView]);
 
   /**
    * The edge of the time selection an axis press lands on, with the opposite

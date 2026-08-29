@@ -17,6 +17,7 @@ import {
 import { localePath, type Locale } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
 import { normalizeTrace, type TraceData } from "@/lib/trace-format";
+import { useKeptState } from "@/lib/view-state";
 import { TracePanel } from "./trace-panel";
 import { TraceStats } from "./trace-stats";
 import { TraceSmDispatch } from "./trace-sm-dispatch";
@@ -773,23 +774,40 @@ const KERNEL_TABS = [
 ] as const;
 type KernelTabId = (typeof KERNEL_TABS)[number]["id"];
 
+/**
+ * The trace last parsed, so a remount reuses it instead of fetching again.
+ * Module scope, one entry, and never serialised: it exists to survive the
+ * unmount that a locale switch causes, nothing more.
+ */
+let lastTrace: { source: string; data: TraceData } | null = null;
+
 /** Loads one record's trace JSON on demand and hands it to the panel. */
 function TraceView({ record }: { record: TraceRecord }) {
-  const [data, setData] = useState<TraceData | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [tab, setTab] = useState<KernelTabId>("trace");
-  // the block picked in the SM dispatching grid; a fresh object re-zooms the trace
-  const [focus, setFocus] = useState<{ block: number } | null>(null);
   const source = record.trace;
+  // Held across a remount — switching locale is one — so the reader is not made
+  // to download the trace again. One entry rather than the kept-state store:
+  // these payloads run to tens of megabytes, and only the open one is worth
+  // holding, where a growing map would keep every trace ever opened.
+  const [data, setData] = useState<TraceData | null>(() =>
+    source && lastTrace?.source === source ? lastTrace.data : null,
+  );
+  const [failed, setFailed] = useState(false);
+  const [tab, setTab] = useKeptState<KernelTabId>(`trace:${source}:tab`, "trace");
+  // The block picked in the SM dispatching grid; a fresh object re-zooms the
+  // trace. Deliberately not kept: it is a command, not a view, and what it
+  // produced — the zoom and the mark — is kept by the panel itself. Keeping it
+  // would re-run the zoom on every remount and undo whatever came after.
+  const [focus, setFocus] = useState<{ block: number } | null>(null);
 
   useEffect(() => {
-    if (!source) return;
+    if (!source || data) return;
     let live = true;
     fetch(/^https?:\/\//.test(source) ? source : withBasePath(source))
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((raw) => {
         if (live) {
           const parsed = normalizeTrace(raw);
+          if (parsed && source) lastTrace = { source, data: parsed };
           setData(parsed);
           setFailed(parsed === null);
         }
@@ -800,7 +818,7 @@ function TraceView({ record }: { record: TraceRecord }) {
     return () => {
       live = false;
     };
-  }, [source]);
+  }, [source, data]);
 
   const tabBar = (
     <div className="mt-4 flex items-end gap-1 border-b border-line" role="tablist">
@@ -836,7 +854,12 @@ function TraceView({ record }: { record: TraceRecord }) {
       {tabBar}
       <div className="min-h-0 flex-1 rounded-b-xl border border-t-0 border-line bg-surface p-4">
         {tab === "trace" && data ? (
-          <TracePanel key={source} data={data} focus={focus} />
+          <TracePanel
+            key={source}
+            data={data}
+            focus={focus}
+            stateKey={`panel:${source}`}
+          />
         ) : null}
         {tab === "stats" && data ? <TraceStats key={source} data={data} /> : null}
         {tab === "sm" && data ? (
@@ -878,21 +901,33 @@ export function OpenTracesBrowser({
     }
     return path;
   });
-  const [expanded, setExpanded] = useState<Set<string>>(
+  // Selection, kernel and row are re-read from the query below, which the
+  // locale switch carries over. These are not in the query — they are how the
+  // reader arranged the browser rather than what they are looking at — so they
+  // are kept instead, and a remount finds the tree, the filters and the search
+  // exactly as they were left.
+  const [expanded, setExpanded] = useKeptState<Set<string>>(
+    "open-traces:expanded",
     () => new Set(branchKeys(buildTraceTree(catalog, NAV_LEVELS.length))),
   );
-  const [kernelQuery, setKernelQuery] = useState("");
+  const [kernelQuery, setKernelQuery] = useKeptState("open-traces:search", "");
   const [pickedKernel, setPickedKernel] = useState<string | null>(() =>
     search.get("kernel"),
   );
-  const [facets, setFacets] = useState<Record<string, ParamToken[]>>({});
+  const [facets, setFacets] = useKeptState<Record<string, ParamToken[]>>(
+    "open-traces:facets",
+    {},
+  );
   const [pickedRow, setPickedRow] = useState<TraceRecord | null>(() => {
     const wanted = search.get("params");
     if (!wanted) return null;
     return catalog.find((r) => formatParams(r.params) === wanted) ?? null;
   });
-  const [treeOpen, setTreeOpen] = useState(true);
-  const [kernelsOpen, setKernelsOpen] = useState(true);
+  const [treeOpen, setTreeOpen] = useKeptState("open-traces:tree", true);
+  const [kernelsOpen, setKernelsOpen] = useKeptState(
+    "open-traces:kernels",
+    true,
+  );
   const copy = getOpenTracesCopy(lang);
   const hasRecords = catalog.length > 0;
 

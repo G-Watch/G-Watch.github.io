@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useKeptState } from "@/lib/view-state";
 import type { Locale } from "@/lib/i18n";
 
 /**
@@ -172,10 +173,19 @@ function CommandBlock({
 }
 
 export function InstallWizard({ lang }: { lang?: Locale }) {
+  // The locale follows the page and must not be kept: switching language is
+  // exactly the case where this has to change. What the reader picked does not
+  // change with it, so those three survive the remount.
   const [locale, setLocale] = useState<Locale>(lang ?? "en");
-  const [version, setVersion] = useState<GwatchVersion>(LATEST_VERSION);
-  const [platform, setPlatform] = useState<Platform>("cuda");
-  const [cuda, setCuda] = useState<CudaVersion>(DEFAULT_CUDA);
+  const [version, setVersion] = useKeptState<GwatchVersion>(
+    "install:version",
+    LATEST_VERSION,
+  );
+  const [platform, setPlatform] = useKeptState<Platform>(
+    "install:platform",
+    "cuda",
+  );
+  const [cuda, setCuda] = useKeptState<CudaVersion>("install:cuda", DEFAULT_CUDA);
 
   // Client-side initialization (static export, so both are read on mount):
   //  - locale from the /en/ | /zh/ URL prefix when no explicit `lang` prop
@@ -193,7 +203,7 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
     const fromHash = url.hash.replace("#", "");
     const wanted = (fromQuery ?? fromHash).toLowerCase();
     if (wanted === "rocm" || wanted === "cuda") setPlatform(wanted);
-  }, [lang]);
+  }, [lang, setPlatform]);
 
   const t = STRINGS[locale];
 

@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildLaneRows,
   formatTime,
+  hasWarpRoles,
+  laneBand,
   niceStep,
   usableLevels,
   type LaneLevel,
+  type LaneOrder,
   type LaneRows,
   type TraceData,
 } from "@/lib/trace-format";
@@ -139,6 +142,12 @@ export function TracePanel({
   const grainRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [fullscreen, setFullscreen] = useState(false);
+  // Lanes bucket by warp role by default — that is the reading a
+  // warp-specialized kernel asks for. Turning it off gives the plain hardware
+  // order, thread id ascending. Offered only when there is more than one role.
+  const roleGroupable = useMemo(() => hasWarpRoles(data), [data]);
+  const [groupByRole, setGroupByRole] = useState(true);
+  const laneOrder: LaneOrder = roleGroupable && groupByRole ? "role" : "tid";
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -155,24 +164,16 @@ export function TracePanel({
     v1: 1,
   });
 
-  // an externally picked block zooms the lane axis to its lanes, full time span
+  // an externally picked block zooms the lane axis to its lanes, full time span.
+  // The band is read in the order the axis is currently drawn in: under role
+  // grouping a block's lanes are split across the role bands, so the band it
+  // spans is wide; under thread-id order they are contiguous and it is tight.
   useEffect(() => {
     if (!focus) return;
-    let lo = data.lanes.length;
-    let hi = 0;
-    data.lanes.forEach((lane, index) => {
-      if (lane.block !== focus.block) return;
-      if (index < lo) lo = index;
-      if (index + 1 > hi) hi = index + 1;
-    });
-    if (hi <= lo) return;
-    setView({
-      t0: 0,
-      t1: data.span,
-      v0: lo / data.lanes.length,
-      v1: hi / data.lanes.length,
-    });
-  }, [focus, data]);
+    const band = laneBand(data, laneOrder, (lane) => lane.block === focus.block);
+    if (!band) return;
+    setView({ t0: 0, t1: data.span, v0: band.v0, v1: band.v1 });
+  }, [focus, data, laneOrder]);
   const [selection, setSelection] = useState<{ a: number; b: number } | null>(
     null,
   );
@@ -198,9 +199,11 @@ export function TracePanel({
   const levels = useMemo(() => usableLevels(data), [data]);
   const rowsByLevel = useMemo(() => {
     const map = new Map<LaneLevel, LaneRows>();
-    for (const level of levels) map.set(level, buildLaneRows(data, level));
+    for (const level of levels) {
+      map.set(level, buildLaneRows(data, level, laneOrder));
+    }
     return map;
-  }, [data, levels]);
+  }, [data, levels, laneOrder]);
 
   const plotH = Math.max(0, size.h - AXIS_H - PAD_TOP);
   const plotW = Math.max(0, size.w - AXIS_W);
@@ -876,6 +879,16 @@ export function TracePanel({
     }
   }
 
+  function toggleGroupByRole() {
+    setGroupByRole((on) => !on);
+    // The axis re-sorts, so a lane window or lane selection picked under the old
+    // order no longer names the same lanes. Hand back the whole axis and keep
+    // the time window, which still means what it did.
+    setView((v) => ({ ...v, v0: 0, v1: 1 }));
+    setLaneSel(null);
+    setHover(null);
+  }
+
   function reset() {
     setView({ t0: 0, t1: data.span, v0: 0, v1: 1 });
     setSelection(null);
@@ -939,6 +952,46 @@ export function TracePanel({
           ))}
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {roleGroupable && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={groupByRole}
+              onClick={toggleGroupByRole}
+              title={
+                groupByRole
+                  ? "Lanes are bucketed by warp role; click for thread-id order"
+                  : "Lanes are in thread-id order; click to bucket them by warp role"
+              }
+              className={`mr-1 inline-flex h-6 items-center gap-1.5 rounded border px-2 transition-colors ${
+                groupByRole
+                  ? "border-muted/50 text-ink"
+                  : "border-line text-ink-soft hover:border-muted/50 hover:text-ink"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`grid h-3 w-3 shrink-0 place-items-center rounded-[2px] border ${
+                  groupByRole ? "border-ink bg-ink" : "border-line"
+                }`}
+              >
+                {groupByRole && (
+                  <svg
+                    viewBox="0 0 10 10"
+                    className="h-2 w-2"
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M2 5.2 4.2 7.4 8 2.8" />
+                  </svg>
+                )}
+              </span>
+              Group by warp role
+            </button>
+          )}
           <span className="pr-2">
             {rows.level}
             {data.lanes.length * Math.max(1, data.laneRepeat) <

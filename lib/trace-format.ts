@@ -63,9 +63,20 @@ export const LANE_LEVELS = ["thread", "warp", "warpgroup", "block"] as const;
 export type LaneLevel = (typeof LANE_LEVELS)[number];
 
 /**
- * Row index per lane at one level, plus the row count. Lanes arrive ordered by
- * thread id, so every grouping is contiguous and a row index is just a dense
- * renumbering of the group key.
+ * How lanes are ordered down the axis.
+ *
+ * "role" buckets them by the warp role that lane executes (the roles in the
+ * order the legend lists them, threads ascending inside each), so a
+ * warp-specialized kernel reads as its producer / math / scheduler bands.
+ * "tid" is the plain hardware order, thread id ascending.
+ */
+export const LANE_ORDERS = ["role", "tid"] as const;
+export type LaneOrder = (typeof LANE_ORDERS)[number];
+
+/**
+ * Row index per lane at one level, plus the row count. A row index is a dense
+ * renumbering of the group key, assigned in the order the lanes are displayed
+ * (see LaneOrder) — not in the order they happen to be stored.
  */
 export interface LaneRows {
   level: LaneLevel;
@@ -85,6 +96,64 @@ const LEVEL_PREFIX: Record<LaneLevel, string> = {
   block: "B",
 };
 
+/**
+ * Each lane's warp role, read off the scopes it actually executes.
+ *
+ * A role is a property of the scope, not of the lane, so it is derived here:
+ * every scope a lane enters names the same role in a warp-specialized kernel,
+ * and the first one wins if a lane ever straddles two. Lanes that recorded
+ * nothing have no role and sort last.
+ */
+function laneRoles(data: TraceData): (string | undefined)[] {
+  const roleOfScope = new Map(data.scopes.map((s) => [s.id, s.role]));
+  const roles: (string | undefined)[] = new Array(data.lanes.length);
+  const assigned = new Uint8Array(data.lanes.length);
+  for (const [lane, scope] of data.intervals) {
+    if (assigned[lane]) continue;
+    assigned[lane] = 1;
+    roles[lane] = roleOfScope.get(scope);
+  }
+  return roles;
+}
+
+/** Roles in the order the legend lists them: first appearance in scope order. */
+function roleRanks(data: TraceData): Map<string | undefined, number> {
+  const rank = new Map<string | undefined, number>();
+  for (const scope of data.scopes) {
+    if (!rank.has(scope.role)) rank.set(scope.role, rank.size);
+  }
+  return rank;
+}
+
+/**
+ * True when the lanes carry more than one warp role, i.e. when ordering by role
+ * and ordering by thread id are actually different views. A single-role kernel
+ * gets no say in the matter, so callers can hide the choice.
+ */
+export function hasWarpRoles(data: TraceData): boolean {
+  const seen = new Set<string>();
+  for (const scope of data.scopes) if (scope.role) seen.add(scope.role);
+  return seen.size > 1;
+}
+
+/** Lane indices in display order. */
+function laneSequence(data: TraceData, order: LaneOrder): Int32Array {
+  const seq = new Int32Array(data.lanes.length);
+  for (let i = 0; i < seq.length; i++) seq[i] = i;
+  if (order === "tid") {
+    return seq.sort((a, b) => data.lanes[a].tid - data.lanes[b].tid);
+  }
+  const rank = roleRanks(data);
+  const roles = laneRoles(data);
+  const rankOf = (lane: number) => {
+    const at = rank.get(roles[lane]);
+    return at === undefined ? rank.size : at;
+  };
+  return seq.sort(
+    (a, b) => rankOf(a) - rankOf(b) || data.lanes[a].tid - data.lanes[b].tid,
+  );
+}
+
 function keyOf(lane: TraceLane, level: LaneLevel): number {
   switch (level) {
     case "thread":
@@ -98,22 +167,27 @@ function keyOf(lane: TraceLane, level: LaneLevel): number {
   }
 }
 
-export function buildLaneRows(data: TraceData, level: LaneLevel): LaneRows {
+export function buildLaneRows(
+  data: TraceData,
+  level: LaneLevel,
+  order: LaneOrder = "role",
+): LaneRows {
   const repeat = Math.max(1, data.laneRepeat);
+  const seq = laneSequence(data, order);
   // On the thread axis a lane owns the whole run of threads it stands for, so
   // its intervals are drawn once across that band instead of copied per row.
   if (level === "thread" && repeat > 1) {
     const rowOf = new Int32Array(data.lanes.length);
-    data.lanes.forEach((_, i) => {
-      rowOf[i] = i * repeat;
+    seq.forEach((lane, at) => {
+      rowOf[lane] = at * repeat;
     });
     return {
       level,
       rowOf,
       span: repeat,
-      count: data.lanes.length * repeat,
+      count: seq.length * repeat,
       label: (row) => {
-        const lane = data.lanes[Math.floor(row / repeat)];
+        const lane = data.lanes[seq[Math.floor(row / repeat)]];
         return lane ? `T${lane.tid + (row % repeat)}` : "";
       },
     };
@@ -122,15 +196,17 @@ export function buildLaneRows(data: TraceData, level: LaneLevel): LaneRows {
   const rowOf = new Int32Array(data.lanes.length);
   const seen = new Map<number, number>();
   const keys: number[] = [];
-  data.lanes.forEach((lane, i) => {
-    const key = keyOf(lane, level);
+  // Walking in display order is what puts the rows in that order; a key first
+  // seen late (a block whose lanes span two roles) keeps the row it already got.
+  seq.forEach((lane) => {
+    const key = keyOf(data.lanes[lane], level);
     let row = seen.get(key);
     if (row === undefined) {
       row = seen.size;
       seen.set(key, row);
       keys.push(key);
     }
-    rowOf[i] = row;
+    rowOf[lane] = row;
   });
   return {
     level,
@@ -139,6 +215,28 @@ export function buildLaneRows(data: TraceData, level: LaneLevel): LaneRows {
     count: seen.size,
     label: (row) => `${LEVEL_PREFIX[level]}${keys[row] ?? ""}`,
   };
+}
+
+/**
+ * Where each lane sits in display order, as a fraction of the axis. The lane
+ * window is normalised [0,1], so this is what an outside caller (the SM
+ * dispatching grid picking a block) needs to zoom to a set of lanes.
+ */
+export function laneBand(
+  data: TraceData,
+  order: LaneOrder,
+  match: (lane: TraceLane) => boolean,
+): { v0: number; v1: number } | null {
+  const seq = laneSequence(data, order);
+  let lo = seq.length;
+  let hi = 0;
+  seq.forEach((lane, at) => {
+    if (!match(data.lanes[lane])) return;
+    if (at < lo) lo = at;
+    if (at + 1 > hi) hi = at + 1;
+  });
+  if (hi <= lo) return null;
+  return { v0: lo / seq.length, v1: hi / seq.length };
 }
 
 /**

@@ -82,6 +82,34 @@ export interface TraceRecord {
  * JSON each `trace` points at lives under public/traces/.
  */
 const TRACE_RECORDS: TraceRecord[] = [
+  // FlashAttention-4 · sm103a · the Blackwell CuTeDSL forward, traced at the SASS
+  // tier: 16 warp-role phases across the producer / MMA / softmax / epilogue split
+  {
+    vendor: "NVIDIA",
+    software: "FlashAttention-4",
+    version: "4.0.0.beta29",
+    arch: "sm103a",
+    kernel: "flash_fwd_sm100 bf16 hdim64 warp-specialised",
+    params: {
+      api: "flash_attn_func",
+      batch: 2,
+      seqlen: 1024,
+      heads: 8,
+      head_dim: 64,
+      precision: "bf16",
+      masking: "none",
+    },
+    call: [
+      "flash_attn_func(",
+      "  # B=2, S=1024, H=8, D=64, precision=bf16",
+      "  q, k, v,",
+      "  causal=False,",
+      ")",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA B300 SXM6" },
+    gwatchVersion: "0.0.34",
+    trace: "/traces/flash-attention-4-fwd-sm103a-bf16-hdim64-b2s1024h8.json",
+  },
   // cuBLAS 12.8 · sm90a · nvjet fp16 GEMM, driven directly through cublasGemmEx
   {
     vendor: "NVIDIA",

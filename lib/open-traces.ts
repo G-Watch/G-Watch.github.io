@@ -2599,6 +2599,30 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.34",
     trace: "/traces/flashmla-splitkv-decode-sm90-bf16-hdim576-causal-b32s4096hq128-sass-greedy.json",
   },
+  {
+    vendor: "NVIDIA",
+    software: "FlashMLA",
+    version: "1.0.0 (15f13e5)",
+    arch: "sm90a",
+    kernel: "flash_fwd_splitkv_mla_sm90 bf16 hdim576 v512 causal paged decode \u00b7 PTX tier",
+    params: {
+      api: "flash_mla_with_kvcache",
+      batch: 32,
+      seqlen_kv: 4096,
+      heads_q: 128,
+      heads_kv: 1,
+      head_dim: 576,
+      head_dim_v: 512,
+      page_size: 64,
+      precision: "bf16",
+      masking: "causal",
+      instrumentation: "PTX tier",
+    },
+    call: ["flash_mla_with_kvcache(", "  # B=32, S_kv=4096, H_q=128, H_kv=1, D=576, D_v=512, precision=bf16, causal", "  q, kv_cache, block_table, cache_seqlens, 512,", "  tile_scheduler_metadata, num_splits,", "  causal=True,", ")", "", "# traced by G-Watch at the PTX tier, on scope markers written into splitkv_mla.cuh", "# 7 phases, 70,656 warp-level records"].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3", CUTLASS: "bundled with FlashMLA" },
+    gwatchVersion: "0.0.34",
+    trace: "/traces/flashmla-splitkv-decode-sm90-bf16-hdim576-causal-b32s4096hq128-ptx.json",
+  },
 ];
 
 /**

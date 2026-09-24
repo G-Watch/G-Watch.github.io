@@ -26,6 +26,21 @@ function ViewObjectTrackIcon() {
   );
 }
 
+/** Material Symbols "calculate" (outlined). */
+function CalculateIcon() {
+  return (
+    <svg
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      aria-hidden="true"
+      className="h-[1.15em] w-[1.15em] shrink-0"
+    >
+      <path d="M200-80q-33 0-56.5-23.5T120-160v-640q0-33 23.5-56.5T200-880h560q33 0 56.5 23.5T840-800v640q0 33-23.5 56.5T760-80H200Zm0-80h560v-640H200v640Zm80-80h120v-80H280v80Zm0-140h120v-80H280v80Zm280 140h120v-220H560v220ZM280-520h400v-200H280v200Zm80-60h240v-80H360v80ZM200-160v-640 640Z" />
+    </svg>
+  );
+}
+
 export const navIcons: Record<string, ReactNode> = {
   "view-object-track": <ViewObjectTrackIcon />,
+  calculate: <CalculateIcon />,
 };

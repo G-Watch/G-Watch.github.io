@@ -44,6 +44,38 @@ function inlineCode(text: string) {
   );
 }
 
+/**
+ * The headline, with one of its words linked out.
+ *
+ * `headline` stays a plain string in lib/site-config.ts — it has to serve as
+ * text elsewhere — so the link is declared beside it and spliced in here. A
+ * `text` that is not in the headline renders the headline untouched.
+ */
+function Headline({
+  text,
+  link,
+}: {
+  text: string;
+  link?: { text: string; href: string };
+}) {
+  const at = link ? text.indexOf(link.text) : -1;
+  if (!link || at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noreferrer"
+        className="underline decoration-2 underline-offset-[6px] transition-colors hover:text-accent"
+      >
+        {link.text}
+      </a>
+      {text.slice(at + link.text.length)}
+    </>
+  );
+}
+
 export default async function HomePage({
   params,
 }: {
@@ -77,7 +109,10 @@ export default async function HomePage({
         {hero.note.link.label}
       </a>
     ) : (
-      <Link href={localePath(lang, hero.note.link.href)} className={noteLinkClass}>
+      <Link
+        href={localePath(lang, hero.note.link.href)}
+        className={noteLinkClass}
+      >
         {hero.note.link.label}
       </Link>
     )
@@ -130,7 +165,7 @@ export default async function HomePage({
                     : "mx-auto max-w-3xl text-4xl sm:text-6xl"
                 }`}
               >
-                {hero.headline}
+                <Headline text={hero.headline} link={hero.headlineLink} />
               </h1>
               <p
                 className={`mt-6 text-lg leading-relaxed text-ink-soft ${
@@ -173,7 +208,9 @@ export default async function HomePage({
                 ))}
               <div
                 className={`mt-9 flex flex-wrap items-center gap-3 ${
-                  overlapMedia ? "justify-center lg:justify-start" : "justify-center"
+                  overlapMedia
+                    ? "justify-center lg:justify-start"
+                    : "justify-center"
                 }`}
               >
                 <Link
@@ -207,11 +244,13 @@ export default async function HomePage({
         <div className="grid gap-4 sm:grid-cols-2">
           {features.map((feature) => {
             const media = feature.slot ? (
-              featureSlots[feature.slot] ?? null
+              (featureSlots[feature.slot] ?? null)
             ) : feature.video ? (
               <video
                 src={withBasePath(feature.video)}
-                poster={feature.poster ? withBasePath(feature.poster) : undefined}
+                poster={
+                  feature.poster ? withBasePath(feature.poster) : undefined
+                }
                 autoPlay
                 loop
                 muted

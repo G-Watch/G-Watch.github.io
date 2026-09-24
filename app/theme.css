@@ -101,3 +101,70 @@
     animation: none;
   }
 }
+
+/*
+ * Dialog entry / exit — USER-OWNED. Used by components/doc-dialog.tsx.
+ *
+ * A native <dialog> is `display: none` until it opens and goes back to it the
+ * instant it closes, so neither end of the transition exists by default. The
+ * two mechanisms that fix that:
+ *
+ *   @starting-style        the state to animate FROM on the frame it appears
+ *   allow-discrete         lets `display` and `overlay` — which flip rather
+ *                          than tween — hold their old value until the rest of
+ *                          the transition finishes, so the exit is visible
+ *
+ * Without support for either, the dialog simply appears and disappears, which
+ * is the correct fallback.
+ */
+.doc-dialog {
+  opacity: 0;
+  transform: translateY(6px) scale(0.985);
+  transition:
+    opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+
+.doc-dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .doc-dialog[open] {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+/* The scrim fades with it, on the same curve. */
+.doc-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-ink) 0%, transparent);
+  backdrop-filter: blur(0px);
+  transition:
+    background 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    backdrop-filter 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+
+.doc-dialog[open]::backdrop {
+  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+@starting-style {
+  .doc-dialog[open]::backdrop {
+    background: color-mix(in srgb, var(--color-ink) 0%, transparent);
+    backdrop-filter: blur(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-dialog,
+  .doc-dialog::backdrop {
+    transition: none;
+  }
+}

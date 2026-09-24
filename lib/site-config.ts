@@ -95,6 +95,11 @@ export interface LocaleContent {
   hero: {
     eyebrow: string;
     headline: string;
+    /**
+     * Turns one substring of `headline` into a link. Kept separate so the
+     * headline itself stays plain text for titles and metadata.
+     */
+    headlineLink?: { text: string; href: string };
     subhead: string;
     primaryCta: NavLink;
     secondaryCta: NavLink;
@@ -172,7 +177,11 @@ export const siteConfig: SiteConfig = {
         "G-Watch is a toolbox for agentic GPU/TPU kernel optimization. It offers rich profiling on NVIDIA and AMD GPUs and Google TPUs, plus program-analysis tools for inspecting compiler-generated kernel binaries.",
       hero: {
         eyebrow: "",
-        headline: "Reinvent the GPU profiler for AI agents",
+        headline: "Boosting RSI for AI Infra",
+        headlineLink: {
+          text: "RSI",
+          href: "https://en.wikipedia.org/wiki/Recursive_self-improvement",
+        },
         subhead:
           "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring binary-level intra-kernel tracing (Xtrace), binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
         primaryCta: { label: "Read the docs", href: "/docs/" },
@@ -250,6 +259,10 @@ export const siteConfig: SiteConfig = {
           href: "/open-traces/",
           icon: "view-object-track",
         },
+        // Hidden while the calculator is still being built. Put this line
+        // back and rename app/[lang]/_calculator back to `calculator` to
+        // return it to the site.
+        // { label: "Calculator", href: "/calculator/", icon: "calculate" },
         { label: "Docs", href: "/docs/" },
         { label: "Blog", href: "/blog/" },
       ],
@@ -268,7 +281,11 @@ export const siteConfig: SiteConfig = {
         "G-Watch 是一个面向智能体（agent）的 GPU/TPU kernel 优化工具箱。它在 NVIDIA、AMD GPU 与 Google TPU 上提供丰富的性能剖析能力，并配备用于检视编译器生成的 kernel 二进制的程序分析工具。",
       hero: {
         eyebrow: "",
-        headline: "为 AI Agent 重造 GPU Profiler",
+        headline: "为 AI Infra 加速 RSI",
+        headlineLink: {
+          text: "RSI",
+          href: "https://en.wikipedia.org/wiki/Recursive_self-improvement",
+        },
         subhead:
           "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含指令级别的核内追踪 (Xtrace)、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
         primaryCta: { label: "阅读文档", href: "/docs/" },
@@ -345,6 +362,9 @@ export const siteConfig: SiteConfig = {
           href: "/open-traces/",
           icon: "view-object-track",
         },
+        // Hidden with the English one above — both nav lists, or the site is
+        // half-showing it.
+        // { label: "计算器", href: "/calculator/", icon: "calculate" },
         { label: "文档", href: "/docs/" },
         { label: "博客", href: "/blog/" },
       ],

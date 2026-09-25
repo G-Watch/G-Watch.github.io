@@ -142,17 +142,23 @@ One line, `key=value` separated by spaces, so a chat client cannot break it
 across lines. Order is fixed so two tokens over the same region compare equal.
 
 ```
-gwtrace/1 report=<file> kernel=<short>#<hash4> t=<t0>:<t1><unit> lane=<level>:<lo>:<hi> order=<thread|role> scopes=<a,b,c>
+gwtrace/1 kernel=<short>#<hash4> t=<t0>:<t1><unit> lane=<level>:<ranges> order=<thread|role> scopes=<a,b,c>
 ```
 
 | key | meaning |
 |---|---|
-| `report` | the report file the panel was rendered from, basename only |
 | `kernel` | the kernel's leading identifier plus a 4-hex digest of its full mangled name — the full name is hundreds of characters |
-| `t` | the time range, in the clock's own unit (`ns` or `cyc`) |
-| `lane` | the lane level the panel was showing, and the inclusive id range |
-| `order` | `thread` for thread-id order, `role` for role grouping — a lane range means different rows under each |
-| `scopes` | the scopes that actually appear inside the region, comma separated; omitted when the region is empty |
+| `t` | the time range, in the clock's own unit (`ns` or `cyc`), rounded to whole units and **counted from the run's first interval** — the panel rebases time to zero, and a token that carried a raw `%globaltimer` value would read as an 18-digit number nobody can check |
+| `lane` | the level the panel was showing, and **the ids it holds** as `0-3,12,20-23` |
+| `order` | `thread` or `role` — how the axis was sorted when the reader drew the band, which reproduces the view but is not needed to read the token |
+| `scopes` | the scopes that appear inside the region, comma separated; omitted when none do |
 
-`gwatch show <report> --select '<token>'` reads it back. A token whose `report`
-or `kernel` disagrees with the report it is handed is an error, never a guess.
+The lane ids are listed, not given as one low-to-high range, because under role
+grouping a band of screen holds rows that are scattered in id space. Listing
+them means the token says what was selected however the axis was sorted.
+
+No key names the report. The panel is inside one HTML file and the token is
+read against a JSON report the reader names on the command line; a panel
+guessing that file from its own path would be guessing. `kernel` is what ties
+the two together: `gwatch show <report> --select '<token>'` refuses a token
+whose kernel is not the report's, rather than answering about the wrong one.

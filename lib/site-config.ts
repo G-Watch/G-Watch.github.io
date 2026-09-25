@@ -101,8 +101,14 @@ export interface LocaleContent {
      */
     headlineLink?: { text: string; href: string };
     subhead: string;
-    primaryCta: NavLink;
-    secondaryCta: NavLink;
+    /** Call-to-action buttons. Ignored when `actions` is set. */
+    primaryCta?: NavLink;
+    secondaryCta?: NavLink;
+    /**
+     * Key into the heroSlots registry in lib/hero-slots.tsx, rendered in place
+     * of the two CTA buttons.
+     */
+    actions?: string;
     /** Optional showcase image/video — a single item or an array (arrays crossfade). */
     media?: HeroMedia | HeroMedia[];
     /** Optional attribution line below the subhead, with one inline link. */
@@ -178,22 +184,14 @@ export const siteConfig: SiteConfig = {
       hero: {
         eyebrow: "",
         headline: "Boosting RSI for AI Infra",
-        headlineLink: {
-          text: "RSI",
-          href: "https://en.wikipedia.org/wiki/Recursive_self-improvement",
-        },
         subhead:
           "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring binary-level intra-kernel tracing (Xtrace), binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
-        primaryCta: { label: "Read the docs", href: "/docs/" },
-        secondaryCta: {
-          label: "Quickstart",
-          href: "/docs/humanize/installation/",
-        },
+        actions: "install",
         media: {
           type: "custom",
-          slot: "arch",
+          slot: "news",
           placement: "overlap",
-          layout: { textRatio: 1.3 },
+          layout: { textRatio: 1.3, offsetX: 0, width: 100 },
         },
         note: {
           prefix: "G-Watch is an open-source project under ",
@@ -207,30 +205,7 @@ export const siteConfig: SiteConfig = {
           },
         },
       },
-      features: [
-        {
-          title: "Intra-kernel Tracing (Xtrace)",
-          body: "See the phase timeline inside a single kernel: load, compute, epilogue, and the bubbles between them. Mark scopes in CUDA, TileLang, CuTeDSL, or Triton, then read the trace as a human report or an agent view.",
-          slot: "iket-views",
-          href: "/docs/humanize/intra-kernel-tracing/index/",
-          image: "/features/two-views.svg",
-        },
-        {
-          title: "Counter-based profiling",
-          body: "Range profiling collects per-launch hardware counters — occupancy, pipe/tensor-core utilization, memory throughput, achieved-vs-peak cycles — and PC sampling localizes the bottleneck to the instructions that stall and why (memory waits, dependency, divergence, throttles), mapped to source and SASS.",
-          image: "/features/landing.svg",
-        },
-        {
-          title: "Binary analysis",
-          body: "Inspect compiler-generated SASS/AMDGPU binaries: demangle kernels, walk decoded instructions, map PC→source line, and dump the control-flow graph and basic blocks — for register analysis and binary instrumentation.",
-          image: "/features/blog.svg",
-        },
-        {
-          title: "Agentic auto-optimization",
-          body: "Ships as agent skills that drive a reasoning loop: profile → hypothesize → apply one minimal change → verify correctness, performance, and hardware behavior. Works for CUDA C++, Triton, CuTe, TileLang, and HIP.",
-          image: "/features/static.svg",
-        },
-      ],
+      features: [],
       quickstart: {
         title: "Install in a minute",
         intro:
@@ -282,22 +257,14 @@ export const siteConfig: SiteConfig = {
       hero: {
         eyebrow: "",
         headline: "为 AI Infra 加速 RSI",
-        headlineLink: {
-          text: "RSI",
-          href: "https://en.wikipedia.org/wiki/Recursive_self-improvement",
-        },
         subhead:
           "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含指令级别的核内追踪 (Xtrace)、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
-        primaryCta: { label: "阅读文档", href: "/docs/" },
-        secondaryCta: {
-          label: "快速开始",
-          href: "/docs/humanize/installation/",
-        },
+        actions: "installZh",
         media: {
           type: "custom",
-          slot: "archZh",
+          slot: "newsZh",
           placement: "overlap",
-          layout: { textRatio: 1.3 },
+          layout: { textRatio: 1.3, offsetX: 0, width: 100 },
         },
         note: {
           prefix: "G-Watch 是 ",
@@ -311,30 +278,7 @@ export const siteConfig: SiteConfig = {
           },
         },
       },
-      features: [
-        {
-          title: "核内追踪 (Xtrace)",
-          body: "看清单次 kernel 内部的 phase 时间线：load、compute、epilogue，以及它们之间的气泡。在 CUDA、TileLang、CuTeDSL 或 Triton 里打 scope，然后以人类报告或 agent 视图查看追踪结果。",
-          slot: "iket-views",
-          href: "/docs/humanize/intra-kernel-tracing/index/",
-          image: "/features/two-views.svg",
-        },
-        {
-          title: "基于计数器的剖析",
-          body: "Range profiling 按每次 launch 采集硬件计数器——占用率、pipe/tensor core 利用率、访存吞吐、达成-对-峰值的 cycle 比；PC 采样进一步把瓶颈定位到具体 stall 的指令及其原因（访存等待、依赖、分支发散、throttle），并映射到源码与 SASS。",
-          image: "/features/landing.svg",
-        },
-        {
-          title: "二进制分析",
-          body: "检视编译器生成的 SASS/AMDGPU 二进制：反混淆 kernel 名、遍历反汇编指令、映射 PC→源码行、导出控制流图与基本块——用于寄存器分析与二进制插桩。",
-          image: "/features/blog.svg",
-        },
-        {
-          title: "面向智能体的自动优化",
-          body: "以 agent skill 形式提供，驱动推理闭环：剖析 → 提出假设 → 施加一处最小改动 → 验证正确性、性能与硬件行为。支持 CUDA C++、Triton、CuTe、TileLang 与 HIP。",
-          image: "/features/static.svg",
-        },
-      ],
+      features: [],
       quickstart: {
         title: "一分钟安装",
         intro: "装上包与 agent skill，然后直接让你的智能体去剖析一个 kernel。",

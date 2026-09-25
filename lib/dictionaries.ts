@@ -16,7 +16,7 @@ export interface Dictionary {
   doc: { prev: string; next: string };
   toc: { title: string };
   view: { humanize: string; agent: string };
-  agent: { banner: string; toHumanize: string };
+  agent: { toHumanize: string };
   blogPost: { back: string };
   quickstart: { eyebrow: string };
   notFound: { title: string; body: string; home: string };
@@ -41,7 +41,6 @@ const en: Dictionary = {
   toc: { title: "On this page" },
   view: { humanize: "Humanize", agent: "Agent" },
   agent: {
-    banner: "agent view · machine-readable HTML",
     toHumanize: "→ humanize view",
   },
   blogPost: { back: "← Back to blog" },
@@ -72,7 +71,6 @@ const zh: Dictionary = {
   toc: { title: "本页内容" },
   view: { humanize: "Humanize", agent: "Agent" },
   agent: {
-    banner: "agent view · 机器可读 HTML",
     toHumanize: "→ humanize 视图",
   },
   blogPost: { back: "← 返回博客" },

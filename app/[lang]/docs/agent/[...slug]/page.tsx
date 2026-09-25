@@ -36,7 +36,7 @@ export default async function DocAgentPage({
   const doc = getDoc(lang, resolved.slug);
   if (!doc) notFound();
 
-  const { html, content } = await renderContent(doc, lang);
+  const { html, content } = await renderContent(doc, lang, "agent");
 
   return (
     <AgentShell

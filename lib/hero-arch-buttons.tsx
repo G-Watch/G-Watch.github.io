@@ -1,7 +1,8 @@
 // User-owned hero showcase component.
 //
 // A caption plus two glass parallelogram buttons — one per supported GPU
-// architecture (NVIDIA CUDA / AMD ROCm), stacked with a vertical gap. Each
+// architecture (NVIDIA CUDA / AMD ROCm), stacked with a vertical gap, or side
+// by side with `row`. Each
 // button has two zones split by an edge-parallel divider: a frosted-glass logo
 // panel on the left and the brand-colored label on the right. Registered as the
 // "arch" slot in lib/hero-slots.tsx and surfaced in the hero via
@@ -38,11 +39,11 @@ const ARCHES: Arch[] = [
   { label: "ROCm", platform: "rocm", vendor: "AMD", short: "AMD", accent: "#ed1c24", logo: "/amd_logo.png" },
 ];
 
-function Logo({ arch }: { arch: Arch }) {
+function Logo({ arch, compact }: { arch: Arch; compact: boolean }) {
   // skew-x-12 counter-skews the content so it sits upright inside the
   // -skew-x-12 parallelogram frame; it grows a bit when the button is hovered.
   const base =
-    "relative z-10 h-16 w-16 flex-none skew-x-12 transition-transform duration-300 ease-out group-hover:scale-110";
+    `relative z-10 ${compact ? "h-10 w-10" : "h-16 w-16"} flex-none skew-x-12 transition-transform duration-300 ease-out group-hover:scale-110`;
   if (arch.logo) {
     // Plain <img>: the static export has no next/image optimizer.
     // eslint-disable-next-line @next/next/no-img-element
@@ -65,7 +66,15 @@ function Logo({ arch }: { arch: Arch }) {
   );
 }
 
-function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
+function ArchButton({
+  arch,
+  lang,
+  compact,
+}: {
+  arch: Arch;
+  lang: Locale;
+  compact: boolean;
+}) {
   return (
     <Link
       href={localePath(
@@ -100,7 +109,9 @@ function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
           {/* LEFT — light logo panel. The border-r renders slanted, parallel to
               the frame edges. Grows on hover. */}
           <div
-            className="relative flex items-center justify-center overflow-hidden border-r-2 px-6 transition-all duration-300 ease-out group-hover:px-8"
+            className={`relative flex items-center justify-center overflow-hidden border-r-2 transition-all duration-300 ease-out ${
+              compact ? "px-4 group-hover:px-5" : "px-6 group-hover:px-8"
+            }`}
             style={{
               borderColor: "rgba(255,255,255,0.55)",
               // Solid light brand tint (pale green / pale red) so the black logo
@@ -108,7 +119,7 @@ function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
               background: `color-mix(in srgb, ${arch.accent} 16%, white)`,
             }}
           >
-            <Logo arch={arch} />
+            <Logo arch={arch} compact={compact} />
             {/* Glass reflection — sweeps across on hover. */}
             <div
               aria-hidden
@@ -117,9 +128,11 @@ function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
           </div>
           {/* RIGHT — label: dark brand color on the light default, fading to
               white once the deep fill appears on hover. */}
-          <div className="flex flex-1 items-center px-7 py-5">
+          <div
+            className={`flex flex-1 items-center ${compact ? "px-5 py-2.5" : "px-7 py-5"}`}
+          >
             <span
-              className="skew-x-12 whitespace-nowrap text-4xl font-bold italic text-[color:var(--label)] transition-colors duration-300 ease-out group-hover:text-white"
+              className={`skew-x-12 whitespace-nowrap ${compact ? "text-2xl" : "text-4xl"} font-bold italic text-[color:var(--label)] transition-colors duration-300 ease-out group-hover:text-white`}
               style={
                 {
                   fontFamily: '"Space Grotesk", ui-sans-serif, sans-serif',
@@ -139,23 +152,36 @@ function ArchButton({ arch, lang }: { arch: Arch; lang: Locale }) {
 export function HeroArchButtons({
   caption,
   lang = "en",
+  row = false,
 }: {
   caption: string;
   /** Locale used to build the install-wizard deep links. */
   lang?: Locale;
+  /** Side by side instead of stacked (stacks again on narrow screens). */
+  row?: boolean;
 }) {
+  const buttons = ARCHES.map((arch) => (
+    <ArchButton key={arch.label} arch={arch} lang={lang} compact={row} />
+  ));
+  // The flowing-light beam IS the border (see .beam-border in theme.css).
+  // Caption lives inside the box, so no line sits behind it.
+  if (row) {
+    // Caption to the left of the buttons; everything stacks on narrow screens.
+    return (
+      <div className="beam-border mx-auto flex w-fit flex-col items-center gap-4 rounded-2xl px-6 py-5 sm:flex-row sm:gap-6 lg:mx-0">
+        <p className="whitespace-nowrap font-sans text-lg font-bold tracking-wide text-accent">
+          {caption}
+        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">{buttons}</div>
+      </div>
+    );
+  }
   return (
-    // The flowing-light beam IS the border (see .beam-border in theme.css).
-    // Caption lives inside the box, so no line sits behind it.
     <div className="beam-border mx-auto w-fit rounded-2xl px-8 py-8">
       <p className="mb-6 text-center font-sans text-xl font-bold tracking-wide text-accent">
         {caption}
       </p>
-      <div className="flex w-fit flex-col gap-5">
-        {ARCHES.map((arch) => (
-          <ArchButton key={arch.label} arch={arch} lang={lang} />
-        ))}
-      </div>
+      <div className="flex w-fit flex-col gap-5">{buttons}</div>
     </div>
   );
 }

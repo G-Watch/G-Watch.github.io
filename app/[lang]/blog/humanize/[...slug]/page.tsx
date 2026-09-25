@@ -9,14 +9,11 @@ import { getAllBlogPosts, getBlogPost, resolveAuthors } from "@/lib/content";
 import { authors as authorRegistry } from "@/lib/authors";
 import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
-import { formatDate } from "@/lib/format";
+import { PostDate } from "@/components/post-date";
+import { TitleText } from "@/components/title-text";
 import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
 
-export function generateStaticParams({
-  params,
-}: {
-  params: { lang: string };
-}) {
+export function generateStaticParams({ params }: { params: { lang: string } }) {
   const lang = resolveLocale(params.lang);
   return getAllBlogPosts(lang).map((post) => ({ slug: post.slug }));
 }
@@ -48,18 +45,26 @@ export default async function BlogPostPage({
 
   return (
     <SiteShell lang={lang}>
-      <article className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
+      <article className="mx-auto max-w-4xl px-5 py-16 sm:px-8">
         <header className="mb-10 text-center">
-          {post.date && (
-            <p className="font-mono text-xs text-muted">
-              {formatDate(post.date, lang)}
-            </p>
+          {(post.date || (post.tags && post.tags.length > 0)) && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {post.date && <PostDate iso={post.date} lang={lang} />}
+              {post.tags?.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-line px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-muted"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           )}
-          <h1 className="mt-3 font-serif text-4xl font-bold leading-tight text-ink sm:text-5xl">
-            {post.title}
+          <h1 className="mt-5 font-serif text-4xl font-bold leading-tight text-ink sm:text-5xl">
+            <TitleText title={post.title} highlight={post.highlight} />
           </h1>
           {post.description && (
-            <p className="mt-4 text-lg leading-relaxed text-muted">
+            <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-muted">
               {post.description}
             </p>
           )}

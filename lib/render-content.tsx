@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ContentItem } from "./content";
 import { renderMarkdown, type TocItem } from "./markdown";
-import { renderMdx } from "./mdx";
+import { renderMdx, type View } from "./mdx";
 import type { Locale } from "./i18n";
 
 /**
@@ -18,9 +18,10 @@ export interface RenderedContent {
 export async function renderContent(
   item: ContentItem,
   lang: Locale,
+  view: View = "humanize",
 ): Promise<RenderedContent> {
   if (item.format === "mdx") {
-    const { content, toc } = await renderMdx(item.body, { lang });
+    const { content, toc } = await renderMdx(item.body, { lang, view });
     return { toc, content };
   }
   const { html, toc } = await renderMarkdown(item.body, { lang });

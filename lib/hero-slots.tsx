@@ -11,8 +11,15 @@
 // Seeded by `npm run upgrade` when missing; never overwritten once it exists.
 import type { ReactNode } from "react";
 import { HeroArchButtons } from "@/lib/hero-arch-buttons";
+import { HeroNews } from "@/lib/hero-news";
 
 export const heroSlots: Record<string, ReactNode> = {
   arch: <HeroArchButtons caption="Install G-Watch" lang="en" />,
   archZh: <HeroArchButtons caption="安装 G-Watch" lang="zh" />,
+  // Side by side, in place of the hero's CTA buttons (hero.actions).
+  install: <HeroArchButtons caption="Install G-Watch" lang="en" row />,
+  installZh: <HeroArchButtons caption="安装 G-Watch" lang="zh" row />,
+  // The news feed in the hero's right-hand column; entries in lib/news.ts.
+  news: <HeroNews lang="en" />,
+  newsZh: <HeroNews lang="zh" />,
 };

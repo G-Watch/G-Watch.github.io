@@ -22,6 +22,9 @@
   --color-accent: #2b3138;
   --color-accent-strong: #0f1113;
   --color-accent-soft: #eef0f2;
+  /* The one chromatic color: a title's highlighted word (frontmatter
+     `highlight`) and the probes in the Xtrace post's figures. */
+  --color-highlight: #c0392b;
 
   --font-sans: var(--font-pt-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-pt-serif), ui-serif, Georgia, serif;
@@ -166,5 +169,15 @@
   .doc-dialog,
   .doc-dialog::backdrop {
     transition: none;
+  }
+}
+
+/* Charts in the Xtrace post (lib/blog/xtrace-charts.tsx) fade in on switch. */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

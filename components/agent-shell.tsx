@@ -4,9 +4,9 @@ import type { Collection } from "@/lib/content";
 import { localePath, type Locale } from "@/lib/i18n";
 
 /**
- * Minimal, chrome-free shell for the agent view: a thin banner plus the raw
- * semantic markup of the document. Optimized for machine readers — no sidebar,
- * no table of contents, monospace body.
+ * Minimal, chrome-free shell for the agent view: a thin bar linking back to the
+ * humanize view, plus the raw semantic markup of the document. Optimized for
+ * machine readers — no sidebar, no table of contents, monospace body.
  *
  * `.md` docs pass `html` (a string that already includes the title heading);
  * `.mdx` docs pass `children` (a React node) and the title is rendered here.
@@ -26,13 +26,12 @@ export function AgentShell({
   title: string;
   html?: string;
   children?: ReactNode;
-  strings: { banner: string; toHumanize: string };
+  strings: { toHumanize: string };
 }) {
   return (
     <div className="min-h-screen bg-white">
       <div className="border-b border-neutral-200 bg-neutral-50 px-5 py-2 font-mono text-xs text-neutral-500">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <span>{strings.banner}</span>
+        <div className="mx-auto flex max-w-3xl items-center justify-end">
           <Link
             href={localePath(lang, `/${collection}/humanize/${slugPath}/`)}
             className="underline hover:text-neutral-800"

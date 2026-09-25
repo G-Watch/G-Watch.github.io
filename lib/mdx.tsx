@@ -11,9 +11,12 @@ import {
   autolinkOptions,
   type TocItem,
 } from "./markdown";
-import { mdxComponents } from "./mdx-components";
+import { agentMdxComponents, mdxComponents } from "./mdx-components";
 import { basePath } from "./paths";
 import type { Locale } from "./i18n";
+
+/** Which of the two views (humanize / agent) a document renders for. */
+export type View = "humanize" | "agent";
 
 export interface RenderedMdx {
   content: ReactNode;
@@ -25,7 +28,8 @@ export interface RenderedMdx {
  * Markdown pipeline (GFM, heading slugs + anchors, table of contents, Shiki
  * highlighting, locale/base-path link rewriting). Custom components written as
  * JSX in the content resolve against `mdxComponents` (lib/mdx-components.tsx) —
- * no per-file imports needed.
+ * no per-file imports needed. The agent view layers `agentMdxComponents` on top,
+ * so a component can hand machine readers a text rendering instead.
  *
  * Compilation/eval happens at build time (the site is a static export), so the
  * `run()` call never reaches the browser; interactive client components in the
@@ -33,7 +37,7 @@ export interface RenderedMdx {
  */
 export async function renderMdx(
   source: string,
-  { lang }: { lang: Locale },
+  { lang, view = "humanize" }: { lang: Locale; view?: View },
 ): Promise<RenderedMdx> {
   const toc: TocItem[] = [];
 
@@ -56,7 +60,15 @@ export async function renderMdx(
   });
 
   return {
-    content: <MDXContent components={mdxComponents} />,
+    content: (
+      <MDXContent
+        components={
+          view === "agent"
+            ? { ...mdxComponents, ...agentMdxComponents }
+            : mdxComponents
+        }
+      />
+    ),
     toc,
   };
 }

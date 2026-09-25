@@ -33,6 +33,8 @@ export interface ContentMeta {
   draft?: boolean;
   /** Blog authors: registry keys (see lib/authors.ts) and/or inline objects. */
   authors?: (string | Author)[];
+  /** A word of the title to set in the highlight color, e.g. the product name. */
+  highlight?: string;
 }
 
 /**
@@ -111,6 +113,7 @@ function fileToItem(
     tags: meta.tags,
     draft: meta.draft ?? false,
     authors: Array.isArray(meta.authors) ? meta.authors : undefined,
+    highlight: typeof meta.highlight === "string" ? meta.highlight : undefined,
   };
 }
 

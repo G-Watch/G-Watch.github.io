@@ -36,7 +36,7 @@ export default async function BlogAgentPage({
   const post = getBlogPost(lang, resolved.slug);
   if (!post) notFound();
 
-  const { html, content } = await renderContent(post, lang);
+  const { html, content } = await renderContent(post, lang, "agent");
 
   return (
     <AgentShell

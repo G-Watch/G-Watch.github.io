@@ -1,0 +1,212 @@
+---
+title: "We Release Xtrace: High-Fidelity GPU Kernel Tracing"
+description: Xtrace records what happens inside a GPU kernel as it runs. It traces the compiled binary as it is, so the trace matches the kernel you ship.
+date: 2026-09-24
+highlight: Xtrace
+---
+
+Today we release Xtrace, the intra-kernel tracer in G-Watch.
+Xtrace shows when each part of a GPU kernel runs.
+It works on the compiled kernel binary.
+So the trace describes the same kernel you ship.
+
+You could check more details in <PaperLink href="https://arxiv.org/abs/2609.28769">our paper</PaperLink>.
+
+## Why a kernel needs a timeline
+
+LLM kernels keep growing.
+One FlashAttention launch now holds both the data movement and the math.
+Its warps take different roles.
+Some warps load data. Others compute on it.
+They pass buffers back and forth through a software pipeline.
+The kernel is fast only when these stages overlap well.
+
+Hardware counters can tell you that a kernel is slow.
+They report totals over the whole launch.
+They cannot tell you which stage waits on which.
+
+Intra-kernel tracing answers that question.
+It adds small probes to the kernel.
+Each probe records a timestamp while the kernel runs.
+Together the timestamps form a timeline of every warp.
+
+Below is one such timeline.
+It is a real Xtrace trace of FlashAttention-4 on a B300 GPU.
+Each row is a warp, and warps are grouped by their role.
+Time runs from left to right.
+Each color is one phase of the kernel.
+You can see the producer load tiles while the other warps compute on them.
+
+<OpenTrace
+  trace="/traces/flash-attention-4-fwd-sm103a-bf16-hdim64-b2s1024h8-sass.json"
+  blocks={2}
+  phases="prod.kvload, mma.pv_turn, sm_a.turn, sm_b.turn, epi.tile"
+  caption="Click the trace to explore it. Hover a phase to read its timing. Hold Cmd or Ctrl and scroll to zoom in time. Double click to reset."
+/>
+
+<InstrumentStack>
+
+## The problem with existing tracers
+
+A trace is a measurement.
+It is useful only if the measured kernel stays the same.
+
+Existing tracers add their probes before the kernel is compiled.
+The compiler then treats the probes as part of the kernel.
+It schedules the code differently, and some optimizations disappear.
+So you end up tracing a kernel that differs from the one you ship.
+
+On the kernels we tested, existing tracers keep only 8–48% of the original instructions.
+They also slow the kernel down by 3.8–75.6%.
+This slowdown lands on the very stages you want to measure.
+A stage can look slow only because the probe made it slow.
+
+## What Xtrace does differently
+
+Xtrace adds its probes after compilation.
+It edits the compiled binary directly.
+The compiler never sees the probes, so it optimizes the kernel as usual.
+Xtrace then fits each probe into room the kernel leaves unused.
+
+**The kernel stays intact.**
+Xtrace changes no basic block of the kernel.
+It keeps 94–98% of the original instructions.
+The rest are branch instructions.
+Their targets shift because the probes add code.
+
+**The overhead stays small.**
+Xtrace adds 0.9–2.8% to kernel time.
+We measured this on NVIDIA H100 and B300 GPUs and on AMD MI300X.
+In our tests it never needed an extra register.
+
+**Closed-source kernels work too.**
+Xtrace needs the binary, not the source.
+Vendor libraries ship only binaries.
+So Xtrace can trace the kernels inside cuDNN and cuBLAS.
+We have also traced a GEMM from TensorRT-LLM.
+
+**Both GPU vendors are covered.**
+Xtrace supports 19 GPU architectures.
+
+| Vendor | Architectures |
+| --- | --- |
+| NVIDIA | Volta to Blackwell (`sm_70` to `sm_120`) |
+| AMD | CDNA1 to CDNA4, RDNA1 to RDNA4 |
+
+Xtrace supports CUDA, HIP, CuTeDSL, Triton, TileLang and FlyDSL.
+
+</InstrumentStack>
+
+## Case study 1: a better trace saves agent iterations
+
+Coding agents now write and tune GPU kernels.
+They read profiles to decide what to change next.
+A misleading profile sends them in the wrong direction.
+
+We tested this on FlashAttention-3 (FA-3) on an H100 GPU.
+FA-3 splits its warps into two roles.
+A producer warp loads the input tiles.
+Consumer warps compute attention on them.
+The producer can load a new tile only after the consumers release the old one.
+
+We gave an agent the same task four times.
+The task was to raise the throughput of FA-3.
+Each session read a different profile.
+One read the Xtrace trace.
+Two read traces from existing tools.
+The last one read hardware counters only.
+Everything else stayed the same.
+
+<Fa3AgentCase />
+
+First look at what each trace says about the starting kernel.
+Xtrace shows the producer waiting about 1.3 µs for the K tile.
+That is the real bottleneck.
+The two existing traces split this wait between the K and V tiles.
+Their probes delay the release of the V tile.
+So part of the wait they report does not exist in the real kernel.
+
+All four sessions end near the same plateau of about 566 TFLOPS.
+They get there at very different speeds.
+We mark the first iteration where each session comes within 2.5 TFLOPS of the plateau.
+With Xtrace the agent gets there at iteration 14.
+With the two existing tracers it takes 54 and 71 iterations.
+With hardware counters alone it takes 85.
+So Xtrace reaches the same result 3.9× sooner than the best existing tracer.
+
+## Case study 2: learning from a closed-source kernel
+
+cuDNN ships its own attention kernel.
+It has taken in the FlashAttention-4 (FA-4) design.
+On B300 it now runs faster than the open-source FA-4.
+But cuDNN ships no source code.
+You cannot read it to learn what it does better.
+
+Xtrace can trace it anyway.
+We traced both kernels on the same inputs.
+Then we asked an agent to close the gap using only the two traces.
+
+<Fa4CudnnCase />
+
+The agent found four differences.
+Each one led to a change in FA-4.
+
+**1. FA-4 runs in waves.**
+FA-4 launches one CTA per work tile.
+The GPU cannot hold all of them at once.
+So they run in four waves.
+The last wave starts only after 84% of the kernel time has passed.
+Every SM also sits idle between two waves.
+cuDNN keeps one CTA on each SM for the whole kernel.
+The agent made the FA-4 grid persistent with Cluster Launch Control.
+Each CTA now fetches its next tile in place.
+Throughput rose 9.4%.
+
+**2. The persistent CTAs finish at different times.**
+Each CTA now does one SM's whole share of the work.
+So the slowest CTA sets the kernel time.
+The trace showed a 1.49× gap between the longest and the shortest CTA.
+FA-4 sorted its tiles from long to short only inside each group.
+As a result, the longest tile of every group started at the same time.
+The agent sorted the tiles across all groups instead.
+The gap fell to 1.18×.
+Throughput rose another 2.0%.
+
+**3. Long tiles get paired with long tiles.**
+Some shapes give each CTA at most two tiles.
+With a causal mask, later query blocks carry more work.
+A balanced schedule pairs a long tile with a short one.
+cuDNN does this. Its two tile times correlate at −0.81.
+FA-4 does not. Its correlation is +0.21, because the hardware picks the dispatch order.
+The agent switched to a fixed schedule on these shapes.
+The correlation moved to −0.76.
+Throughput rose 11.1%.
+
+**4. The epilogue waits on the last tile.**
+After writing out a tile, the epilogue waits for the write to finish.
+Then it frees the buffer for the next tile.
+The last tile has no next tile.
+Yet FA-4 still waits 544 ns on it in every CTA.
+cuDNN turns out to do the same.
+The agent dropped this final wait.
+Throughput rose another 1.2%.
+
+| What the trace shows | What the agent changed | Gain |
+| --- | --- | --- |
+| FA-4 runs its CTAs in four waves. | Persistent grid with Cluster Launch Control | +9.4% |
+| Persistent CTAs finish up to 1.49× apart. | Sort tiles across all groups | +2.0% |
+| FA-4 pairs long tiles with long tiles. | Fixed schedule on these shapes | +11.1% |
+| The epilogue waits 544 ns on the last tile. | Drop the final wait | +1.2% |
+
+Together the changes lift FA-4 by 5.2–13.3%.
+The optimized FA-4 now matches cuDNN on three of the four shapes.
+On the fourth it runs 5.2% faster.
+
+## More traces
+
+We publish more traces of closed-source kernels in [Open Traces](/open-traces/).
+You can open each one in your browser.
+
+## Get started
+
+{/* Usage guide: to be written. */}

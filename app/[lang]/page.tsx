@@ -3,12 +3,14 @@ import { Fragment, type CSSProperties } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { HeroMedia } from "@/components/hero-media";
 import { featureSlots } from "@/lib/feature-slots";
+import { heroSlots } from "@/lib/hero-slots";
 import { getSiteContent } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
-import { formatDate } from "@/lib/format";
+import { PostDate } from "@/components/post-date";
+import { TitleText } from "@/components/title-text";
 
 /** Hero-note text tone → color class (literal so Tailwind generates them). */
 const NOTE_TONE: Record<string, string> = {
@@ -206,26 +208,34 @@ export default async function HomePage({
                     {hero.note.suffix}
                   </p>
                 ))}
-              <div
-                className={`mt-9 flex flex-wrap items-center gap-3 ${
-                  overlapMedia
-                    ? "justify-center lg:justify-start"
-                    : "justify-center"
-                }`}
-              >
-                <Link
-                  href={localePath(lang, hero.primaryCta.href)}
-                  className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-paper shadow-paper transition-colors hover:bg-accent-strong"
+              {hero.actions ? (
+                <div className="mt-10">{heroSlots[hero.actions] ?? null}</div>
+              ) : (
+                <div
+                  className={`mt-9 flex flex-wrap items-center gap-3 ${
+                    overlapMedia
+                      ? "justify-center lg:justify-start"
+                      : "justify-center"
+                  }`}
                 >
-                  {hero.primaryCta.label}
-                </Link>
-                <Link
-                  href={localePath(lang, hero.secondaryCta.href)}
-                  className="rounded-full border border-line bg-surface px-6 py-3 text-sm font-bold text-ink-soft transition-colors hover:border-accent hover:text-accent"
-                >
-                  {hero.secondaryCta.label}
-                </Link>
-              </div>
+                  {hero.primaryCta && (
+                    <Link
+                      href={localePath(lang, hero.primaryCta.href)}
+                      className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-paper shadow-paper transition-colors hover:bg-accent-strong"
+                    >
+                      {hero.primaryCta.label}
+                    </Link>
+                  )}
+                  {hero.secondaryCta && (
+                    <Link
+                      href={localePath(lang, hero.secondaryCta.href)}
+                      className="rounded-full border border-line bg-surface px-6 py-3 text-sm font-bold text-ink-soft transition-colors hover:border-accent hover:text-accent"
+                    >
+                      {hero.secondaryCta.label}
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
 
             {overlapMedia && hero.media && <HeroMedia media={hero.media} />}
@@ -240,81 +250,83 @@ export default async function HomePage({
       </section>
 
       {/* Features (with optional illustration, custom slot, or link) */}
-      <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {features.map((feature) => {
-            const media = feature.slot ? (
-              (featureSlots[feature.slot] ?? null)
-            ) : feature.video ? (
-              <video
-                src={withBasePath(feature.video)}
-                poster={
-                  feature.poster ? withBasePath(feature.poster) : undefined
-                }
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="h-44 w-full border-b border-line object-cover"
-              />
-            ) : feature.image ? (
-              // Plain <img>: the static export has no next/image optimizer.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={withBasePath(feature.image)}
-                alt=""
-                className="h-44 w-full border-b border-line object-cover"
-              />
-            ) : null;
+      {features.length > 0 && (
+        <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {features.map((feature) => {
+              const media = feature.slot ? (
+                (featureSlots[feature.slot] ?? null)
+              ) : feature.video ? (
+                <video
+                  src={withBasePath(feature.video)}
+                  poster={
+                    feature.poster ? withBasePath(feature.poster) : undefined
+                  }
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-44 w-full border-b border-line object-cover"
+                />
+              ) : feature.image ? (
+                // Plain <img>: the static export has no next/image optimizer.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={withBasePath(feature.image)}
+                  alt=""
+                  className="h-44 w-full border-b border-line object-cover"
+                />
+              ) : null;
 
-            const inner = (
-              <>
-                {media}
-                <div className="p-7">
-                  <h3 className="font-serif text-xl font-bold text-ink transition-colors group-hover:text-accent">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-3 leading-relaxed text-ink-soft">
-                    {feature.body}
-                  </p>
-                </div>
-              </>
-            );
-
-            const base =
-              "flex flex-col overflow-hidden rounded-2xl border border-line bg-surface";
-
-            if (feature.href) {
-              const linkCls = `group ${base} transition-colors hover:border-accent`;
-              return feature.href.startsWith("http") ? (
-                <a
-                  key={feature.title}
-                  href={feature.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkCls}
-                >
-                  {inner}
-                </a>
-              ) : (
-                <Link
-                  key={feature.title}
-                  href={localePath(lang, feature.href)}
-                  className={linkCls}
-                >
-                  {inner}
-                </Link>
+              const inner = (
+                <>
+                  {media}
+                  <div className="p-7">
+                    <h3 className="font-serif text-xl font-bold text-ink transition-colors group-hover:text-accent">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-3 leading-relaxed text-ink-soft">
+                      {feature.body}
+                    </p>
+                  </div>
+                </>
               );
-            }
 
-            return (
-              <div key={feature.title} className={base}>
-                {inner}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              const base =
+                "flex flex-col overflow-hidden rounded-2xl border border-line bg-surface";
+
+              if (feature.href) {
+                const linkCls = `group ${base} transition-colors hover:border-accent`;
+                return feature.href.startsWith("http") ? (
+                  <a
+                    key={feature.title}
+                    href={feature.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkCls}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <Link
+                    key={feature.title}
+                    href={localePath(lang, feature.href)}
+                    className={linkCls}
+                  >
+                    {inner}
+                  </Link>
+                );
+              }
+
+              return (
+                <div key={feature.title} className={base}>
+                  {inner}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Quick start: install + immediate usage */}
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
@@ -394,13 +406,9 @@ export default async function HomePage({
                 href={localePath(lang, `/blog/humanize/${post.slugPath}/`)}
                 className="group rounded-xl border border-line bg-surface p-6 transition-colors hover:border-accent"
               >
-                {post.date && (
-                  <p className="font-mono text-xs text-muted">
-                    {formatDate(post.date, lang)}
-                  </p>
-                )}
-                <h3 className="mt-2 font-serif text-lg font-bold text-ink group-hover:text-accent">
-                  {post.title}
+                {post.date && <PostDate iso={post.date} lang={lang} />}
+                <h3 className="mt-4 font-serif text-lg font-bold text-ink group-hover:text-accent">
+                  <TitleText title={post.title} highlight={post.highlight} />
                 </h3>
                 {post.description && (
                   <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-ink-soft">

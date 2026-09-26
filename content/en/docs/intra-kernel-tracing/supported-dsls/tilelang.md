@@ -101,8 +101,10 @@ report.render("trace.html")
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** as current OSS G-Watch supports PTX-based
-  instrumentation. SASS-level instrumentation would be open-sourced once ready.
+- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
+  trace machine instructions in a compiled cubin instead — no markers, no
+  rebuild — see
+  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
 - **Export PTX.** TileLang's cubin has no embedded PTX, so `kernel.export_ptx(...)`
   plus `TILELANG_CACHE_PATH` are required for tracing to find the kernel's PTX.
 - **`dsl="tilelang"`** tells G-Watch to recover PTX from the exported cache.

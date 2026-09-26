@@ -1,6 +1,6 @@
 ---
 title: Intra-kernel Tracing
-description: Trace the internal phase timeline of a single GPU kernel across CUDA, TileLang, CuTeDSL, and Triton.
+description: Trace the internal phase timeline of a single GPU kernel across CUDA, TileLang, CuTeDSL and Triton, or at the SASS level with no markers at all.
 order: 10
 ---
 
@@ -15,8 +15,15 @@ kernel DSLs:
 [CuTeDSL](/docs/humanize/intra-kernel-tracing/supported-dsls/cutedsl/), and
 [Triton](/docs/humanize/intra-kernel-tracing/supported-dsls/triton/).
 
-Every trace renders two ways. The HTML report is a polished, interactive view
-for people. The text view is compact and meant for agents, produced by
+When the kernel cannot be marked — a vendor binary, a shipped fatbin, or an
+instruction the compiler made that no source line owns — the
+[SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/) tier traces the
+compiled cubin directly, with no markers and no rebuild.
+
+Every trace renders two ways from one report. The HTML report is an interactive
+panel for people; the text view is compact and meant for agents, produced by
 [`gwatch show`](/docs/humanize/intra-kernel-tracing/visualize-iket-for-agent/).
+Marking a region in the panel copies a token you can paste to an agent, which
+reads back exactly the region you were looking at.
 
 <div style="display:flex;gap:1rem;align-items:flex-start;margin-top:0.5rem"><figure style="flex:1.571;min-width:0;margin:0"><img src="/media/iket_humanview.png" alt="Human view: interactive HTML report" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" /><figcaption style="text-align:center;font-size:0.85em;color:var(--color-muted);margin-top:0.4rem">Human view (HTML report)</figcaption></figure><figure style="flex:1.386;min-width:0;margin:0"><img src="/media/iket_agentview.png" alt="Agent view: gwatch show terminal output" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" /><figcaption style="text-align:center;font-size:0.85em;color:var(--color-muted);margin-top:0.4rem">Agent view (gwatch show)</figcaption></figure></div>

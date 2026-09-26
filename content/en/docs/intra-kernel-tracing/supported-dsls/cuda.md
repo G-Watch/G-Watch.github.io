@@ -96,7 +96,10 @@ report.render("trace.html")
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** as current OSS G-Watch supports PTX-based instrumentation. SASS-level instrumentation would be open-sourced once ready.
+- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
+  trace machine instructions in a compiled cubin instead — no markers, no
+  rebuild — see
+  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
 - **Embed PTX.** Tracing recovers the kernel's PTX from the fatbin captured at
   runtime, so the module must contain PTX — compile **both** the PTX
   (`code=compute_90a`) and SASS (`code=sm_90a`) targets.

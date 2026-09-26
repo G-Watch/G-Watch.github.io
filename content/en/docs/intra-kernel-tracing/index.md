@@ -15,10 +15,9 @@ kernel DSLs:
 [CuTeDSL](/docs/humanize/intra-kernel-tracing/supported-dsls/cutedsl/), and
 [Triton](/docs/humanize/intra-kernel-tracing/supported-dsls/triton/).
 
-When the kernel cannot be marked — a vendor binary, a shipped fatbin, or an
-instruction the compiler made that no source line owns — the
+When the kernel cannot be marked, the
 [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/) tier traces the
-compiled cubin directly, with no markers and no rebuild.
+compiled cubin directly, naming machine instructions instead of source scopes.
 
 Every trace renders two ways from one report. The HTML report is an interactive
 panel for people; the text view is compact and meant for agents, produced by

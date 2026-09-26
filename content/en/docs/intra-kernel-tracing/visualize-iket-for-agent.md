@@ -138,15 +138,18 @@ Two things make this safe to paste around:
 
 ### When an agent should ask for one
 
-An agent working from aggregates alone cannot see what you can. The G-Watch
-tracing skills tell it to stop and ask for a selection when two readings of the
-same numbers both fit and imply different fixes, when a count contradicts the
-structural model it built, when the pair rate drops and the dropped boundaries
-are unexplained, or when you describe something you saw that it cannot locate.
-
-The ask should name the region and the gesture, not request "more information":
+An agent working from aggregates alone cannot see what you can, so a good one
+asks rather than guesses:
 
 > The aggregate says `wait_k_empty` averages 1.2 µs but p95 is 3.2 µs, and the
 > totals cannot tell me whether that tail is a few blocks or all of them. Open
 > `trace.html`, find where the copy warps go quiet, drag out that region, right
 > click → **Copy selection**, and paste it here.
+
+Installing the G-Watch agent skills is what teaches it to ask that way, and to
+read the token you paste back through `gwatch show` rather than parsing the
+report by hand:
+
+```bash
+npx skills add mars-compute-ai/G-Watch -g
+```

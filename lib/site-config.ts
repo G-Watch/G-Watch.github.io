@@ -75,18 +75,23 @@ export interface FeatureCard {
   href?: string;
 }
 
-export interface QuickstartStep {
-  title: string;
-  body: string;
-}
+/** One step of the mocked agent session in the quick start. */
+export type AgentStep =
+  /** A tool call; `out` lines starting "+ " / "- " render as a diff. */
+  | { kind: "tool"; name: string; arg: string; busy: string; out?: string[] }
+  /** The agent talking. */
+  | { kind: "say"; text: string; busy?: string };
 
 export interface Quickstart {
   title: string;
-  intro: string;
-  /** Shown in a terminal block; may contain multiple lines. */
-  command: string;
-  steps: QuickstartStep[];
-  note?: string;
+  install: { label: string; commands: string[] };
+  agent: {
+    label: string;
+    /** Working directory shown in the session header. */
+    cwd: string;
+    prompt: string;
+    steps: AgentStep[];
+  };
 }
 
 export interface LocaleContent {
@@ -185,7 +190,7 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "Boosting RSI for AI Infra",
         subhead:
-          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring binary-level intra-kernel tracing (Xtrace), binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous NVIDIA and AMD kernel optimization.",
+          "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring Xtrace, binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous optimization on NVIDIA and AMD hardwares.",
         actions: "install",
         media: {
           type: "custom",
@@ -193,40 +198,63 @@ export const siteConfig: SiteConfig = {
           placement: "overlap",
           layout: { textRatio: 1.3, offsetX: 0, width: 100 },
         },
-        note: {
-          prefix: "G-Watch is an open-source project under ",
-          link: { label: "Mars Compute", href: "https://mars-compute.com/" },
-          suffix: ".",
-          style: {
-            size: "base",
-            className: "text-accent! font-bold",
-            linkClassName:
-              "font-bold text-accent-strong underline decoration-2 underline-offset-4 hover:decoration-accent",
-          },
-        },
       },
       features: [],
       quickstart: {
-        title: "Install in a minute",
-        intro:
-          "Install the package and the agent skills, then just ask your agent to profile a kernel.",
-        command:
-          "pip3 install gwatch\nnpx skills add mars-compute-ai/G-Watch -g",
-        steps: [
-          {
-            title: "Install G-Watch",
-            body: "`pip3 install gwatch` pulls the profiling + program-analysis toolbox from PyPI.",
-          },
-          {
-            title: "Install the agent skills",
-            body: "`npx skills add mars-compute-ai/G-Watch -g` distributes the G-Watch skills to your coding agents globally.",
-          },
-          {
-            title: "Ask your agent",
-            body: "e.g. `Load the gwatch intra-kernel tracing skill and trace the matmul kernel in bench.py` — the agent profiles it and writes a report.",
-          },
-        ],
-        note: "G-Watch supports NVIDIA and AMD GPUs and Google TPUs. See the docs for per-platform setup.",
+        title: "Quick start",
+        install: {
+          label: "Install",
+          commands: [
+            "pip3 install gwatch",
+            "npx skills add mars-compute-ai/G-Watch -g",
+          ],
+        },
+        agent: {
+          label: "Ask your agent",
+          cwd: "~/attention",
+          prompt: "Trace the attention kernel in bench.py and find where it stalls",
+          steps: [
+            {
+              kind: "tool",
+              name: "Skill",
+              arg: "gwatch-cuda-intra-kernel-tracing",
+              busy: "Loading",
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "python bench.py --trace trace.json",
+              busy: "Tracing",
+              out: ["Wrote trace.json"],
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "gwatch show trace.json --bubbles",
+              busy: "Reading",
+              out: ["Longest bubbles: producer warp, before each KV load"],
+            },
+            {
+              kind: "say",
+              text: "The producer waits for a free KV slot before every load, so the mainloop stalls. A third pipeline stage should hide it.",
+              busy: "Thinking",
+            },
+            {
+              kind: "tool",
+              name: "Update",
+              arg: "attention.py",
+              busy: "Editing",
+              out: ["- kv_stages = 2", "+ kv_stages = 3"],
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "gwatch show trace.json --bubbles",
+              busy: "Re-tracing",
+              out: ["The producer no longer stalls the mainloop"],
+            },
+          ],
+        },
       },
       nav: [
         {
@@ -243,11 +271,6 @@ export const siteConfig: SiteConfig = {
       ],
       footerNote:
         "Profiling and program analysis for agentic GPU/TPU kernel optimization.",
-      footerAttribution: {
-        prefix: "G-Watch is an open-source project under ",
-        link: { label: "Mars Compute", href: "https://mars-compute.com/" },
-        suffix: ".",
-      },
     },
 
     zh: {
@@ -258,7 +281,7 @@ export const siteConfig: SiteConfig = {
         eyebrow: "",
         headline: "为 AI Infra 加速 RSI",
         subhead:
-          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含指令级别的核内追踪 (Xtrace)、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 平台上实现全自动的 Kernel 优化。",
+          "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含 Xtrace、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 硬件上实现全自动优化。",
         actions: "installZh",
         media: {
           type: "custom",
@@ -266,39 +289,63 @@ export const siteConfig: SiteConfig = {
           placement: "overlap",
           layout: { textRatio: 1.3, offsetX: 0, width: 100 },
         },
-        note: {
-          prefix: "G-Watch 是 ",
-          link: { label: "Mars Compute", href: "https://mars-compute.com/" },
-          suffix: " 旗下的开源项目。",
-          style: {
-            size: "base",
-            className: "text-accent! font-bold",
-            linkClassName:
-              "font-bold text-accent-strong underline decoration-2 underline-offset-4 hover:decoration-accent",
-          },
-        },
       },
       features: [],
       quickstart: {
-        title: "一分钟安装",
-        intro: "装上包与 agent skill，然后直接让你的智能体去剖析一个 kernel。",
-        command:
-          "pip3 install gwatch\nnpx skills add mars-compute-ai/G-Watch -g",
-        steps: [
-          {
-            title: "安装 G-Watch",
-            body: "`pip3 install gwatch` 从 PyPI 拉取剖析 + 程序分析工具箱。",
-          },
-          {
-            title: "安装 agent skill",
-            body: "`npx skills add mars-compute-ai/G-Watch -g` 把 G-Watch skills 全局分发给你的编程智能体。",
-          },
-          {
-            title: "向智能体提问",
-            body: "例如 `加载 gwatch intra-kernel tracing skill，追踪 bench.py 里的 matmul kernel`——智能体会完成剖析并写出报告。",
-          },
-        ],
-        note: "G-Watch 支持 NVIDIA、AMD GPU 与 Google TPU。各平台的具体配置见文档。",
+        title: "快速开始",
+        install: {
+          label: "安装",
+          commands: [
+            "pip3 install gwatch",
+            "npx skills add mars-compute-ai/G-Watch -g",
+          ],
+        },
+        agent: {
+          label: "交给智能体",
+          cwd: "~/attention",
+          prompt: "追踪 bench.py 里的 attention kernel，找出它卡在哪里",
+          steps: [
+            {
+              kind: "tool",
+              name: "Skill",
+              arg: "gwatch-cuda-intra-kernel-tracing",
+              busy: "Loading",
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "python bench.py --trace trace.json",
+              busy: "Tracing",
+              out: ["Wrote trace.json"],
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "gwatch show trace.json --bubbles",
+              busy: "Reading",
+              out: ["Longest bubbles: producer warp, before each KV load"],
+            },
+            {
+              kind: "say",
+              text: "producer 每次加载前都在等空闲的 KV 槽位，mainloop 因此停顿。加一级流水线应该能把它藏住。",
+              busy: "Thinking",
+            },
+            {
+              kind: "tool",
+              name: "Update",
+              arg: "attention.py",
+              busy: "Editing",
+              out: ["- kv_stages = 2", "+ kv_stages = 3"],
+            },
+            {
+              kind: "tool",
+              name: "Bash",
+              arg: "gwatch show trace.json --bubbles",
+              busy: "Re-tracing",
+              out: ["The producer no longer stalls the mainloop"],
+            },
+          ],
+        },
       },
       nav: [
         {
@@ -313,11 +360,6 @@ export const siteConfig: SiteConfig = {
         { label: "博客", href: "/blog/" },
       ],
       footerNote: "为面向智能体的 GPU/TPU kernel 优化提供性能剖析与程序分析。",
-      footerAttribution: {
-        prefix: "G-Watch 是 ",
-        link: { label: "Mars Compute", href: "https://mars-compute.com/" },
-        suffix: " 旗下的开源项目。",
-      },
     },
   },
 };

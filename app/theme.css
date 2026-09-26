@@ -181,3 +181,81 @@
     opacity: 1;
   }
 }
+
+/*
+ * Home page scroll choreography — USER-OWNED. Driven by lib/home-scroll.tsx,
+ * which sets `home-scroll` on <html> only when motion is allowed, and feeds
+ * scroll progress in as --lead-out (part one leaving) and --rise (each piece of
+ * part two, and the footer, arriving). Everything is a function of scroll
+ * position, so it runs backwards on the way up.
+ */
+@keyframes home-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Part one arrives once, on load. */
+#home-lead .home-lead-inner > * {
+  animation: home-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A quiet cue that there is more below; gone as soon as the page moves. */
+.home-cue {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  translate: -50% 0;
+  color: var(--color-muted);
+  opacity: 0;
+}
+
+html.home-scroll .home-cue {
+  opacity: calc(0.7 * (1 - var(--lead-out, 0) * 6));
+  animation: home-cue 2.4s ease-in-out infinite;
+}
+
+@keyframes home-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* Part one leaves: drifts up, settles back, softens and fades. */
+html.home-scroll #home-lead .home-lead-inner {
+  opacity: calc(1 - var(--lead-out, 0) * 0.9);
+  transform: translateY(calc(var(--lead-out, 0) * -48px))
+    scale(calc(1 - var(--lead-out, 0) * 0.06));
+  filter: blur(calc(var(--lead-out, 0) * 6px));
+  transform-origin: 50% 0;
+  will-change: transform, opacity, filter;
+}
+
+/* Part two, and the footer with it, rise into place piece by piece. */
+html.home-scroll #home-quickstart [data-rise],
+html.home-scroll footer {
+  opacity: var(--rise, 0);
+  transform: translateY(calc((1 - var(--rise, 0)) * 64px))
+    scale(calc(0.97 + var(--rise, 0) * 0.03));
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #home-lead .home-lead-inner > * {
+    animation: none;
+  }
+}
+
+/* On the home page the footer closes part two directly, with no gap above. */
+body:has(#home-quickstart) footer {
+  margin-top: 0;
+}

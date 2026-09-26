@@ -4,13 +4,11 @@ import { SiteShell } from "@/components/site-shell";
 import { HeroMedia } from "@/components/hero-media";
 import { featureSlots } from "@/lib/feature-slots";
 import { heroSlots } from "@/lib/hero-slots";
+import { QuickstartTerminals } from "@/lib/quickstart-terminals";
+import { HomeScroll } from "@/lib/home-scroll";
 import { getSiteContent } from "@/lib/site-config";
-import { getAllBlogPosts } from "@/lib/content";
-import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
-import { PostDate } from "@/components/post-date";
-import { TitleText } from "@/components/title-text";
 
 /** Hero-note text tone → color class (literal so Tailwind generates them). */
 const NOTE_TONE: Record<string, string> = {
@@ -29,22 +27,6 @@ const NOTE_SIZE: Record<string, string> = {
 
 const NOTE_LINK_DEFAULT =
   "font-medium text-accent underline-offset-2 hover:text-accent-strong hover:underline";
-
-/** Render plain text, turning `backtick` spans into <code>. */
-function inlineCode(text: string) {
-  return text.split(/(`[^`]+`)/g).map((part, i) =>
-    part.startsWith("`") && part.endsWith("`") ? (
-      <code
-        key={i}
-        className="rounded bg-paper-deep px-1.5 py-0.5 font-mono text-[0.85em] text-accent-strong"
-      >
-        {part.slice(1, -1)}
-      </code>
-    ) : (
-      <Fragment key={i}>{part}</Fragment>
-    ),
-  );
-}
 
 /**
  * The headline, with one of its words linked out.
@@ -85,9 +67,7 @@ export default async function HomePage({
 }) {
   const lang = resolveLocale((await params).lang);
   const content = getSiteContent(lang);
-  const dict = getDictionary(lang);
   const { hero, features, quickstart } = content;
-  const recentPosts = getAllBlogPosts(lang).slice(0, 3);
   const firstMedia = Array.isArray(hero.media) ? hero.media[0] : hero.media;
   const overlapMedia = firstMedia?.placement === "overlap";
   // Text-column : showcase-column width ratio for overlap (1 = equal split).
@@ -122,8 +102,12 @@ export default async function HomePage({
 
   return (
     <SiteShell lang={lang}>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
+      <HomeScroll />
+      {/* Part one: the lead-in and the news. It fills the first screen. */}
+      <section
+        id="home-lead"
+        className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden"
+      >
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 opacity-60"
@@ -133,7 +117,7 @@ export default async function HomePage({
           }}
         />
         <div
-          className={`relative mx-auto px-5 sm:px-8 ${
+          className={`home-lead-inner relative mx-auto w-full px-5 sm:px-8 ${
             overlapMedia ? "max-w-7xl" : "max-w-4xl"
           }`}
         >
@@ -247,6 +231,17 @@ export default async function HomePage({
             <HeroMedia media={hero.media} />
           </div>
         )}
+        <span aria-hidden className="home-cue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </section>
 
       {/* Features (with optional illustration, custom slot, or link) */}
@@ -328,98 +323,21 @@ export default async function HomePage({
         </section>
       )}
 
-      {/* Quick start: install + immediate usage */}
-      <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-        <div className="rounded-2xl border border-line bg-paper-deep p-8 sm:p-12">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-            {dict.quickstart.eyebrow}
-          </p>
-          <h2 className="mt-3 max-w-2xl font-serif text-3xl font-bold text-ink">
+      {/* Part two: the quick start. With the footer under it, it fills exactly
+          one screen below the header; lib/home-scroll.tsx measures the footer
+          into --footer-h. The footer rises with it. */}
+      <section
+        id="home-quickstart"
+        className="mx-auto flex h-[calc(100svh-4rem-var(--footer-h,8rem))] min-h-[32rem] max-w-6xl flex-col px-5 pb-8 pt-10 sm:px-8"
+      >
+        <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col">
+          <h2 data-rise="0" className="mb-8 text-2xl font-bold text-ink">
             {quickstart.title}
           </h2>
-          <p className="mt-3 max-w-2xl leading-relaxed text-ink-soft">
-            {quickstart.intro}
-          </p>
-
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {/* Terminal */}
-            <div className="overflow-hidden rounded-xl border border-line bg-ink">
-              <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
-                <span className="h-2.5 w-2.5 rounded-full bg-white/25" />
-              </div>
-              <pre className="overflow-x-auto px-5 py-4 font-mono text-sm leading-relaxed text-paper">
-                {quickstart.command.split("\n").map((line, i) => (
-                  <div key={i}>
-                    <span className="select-none text-accent">$ </span>
-                    {line}
-                  </div>
-                ))}
-              </pre>
-            </div>
-
-            {/* Steps */}
-            <ol className="space-y-4">
-              {quickstart.steps.map((step, i) => (
-                <li key={step.title} className="flex gap-4">
-                  <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent-soft font-mono text-sm font-bold text-accent-strong">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <p className="font-serif font-bold text-ink">
-                      {step.title}
-                    </p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-                      {inlineCode(step.body)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {quickstart.note && (
-            <p className="mt-6 text-xs text-muted">{quickstart.note}</p>
-          )}
+          <QuickstartTerminals quickstart={quickstart} />
         </div>
       </section>
 
-      {/* Recent blog */}
-      {recentPosts.length > 0 && (
-        <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-          <div className="mb-6 flex items-end justify-between">
-            <h2 className="font-serif text-2xl font-bold text-ink">
-              {dict.blogIndex.title}
-            </h2>
-            <Link
-              href={localePath(lang, "/blog/")}
-              className="text-sm text-accent hover:text-accent-strong"
-            >
-              →
-            </Link>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            {recentPosts.map((post) => (
-              <Link
-                key={post.slugPath}
-                href={localePath(lang, `/blog/humanize/${post.slugPath}/`)}
-                className="group rounded-xl border border-line bg-surface p-6 transition-colors hover:border-accent"
-              >
-                {post.date && <PostDate iso={post.date} lang={lang} />}
-                <h3 className="mt-4 font-serif text-lg font-bold text-ink group-hover:text-accent">
-                  <TitleText title={post.title} highlight={post.highlight} />
-                </h3>
-                {post.description && (
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-ink-soft">
-                    {post.description}
-                  </p>
-                )}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
     </SiteShell>
   );
 }

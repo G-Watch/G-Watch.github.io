@@ -4,6 +4,8 @@ description: Trace the internal phase timeline of a single GPU kernel across CUD
 order: 10
 ---
 
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+
 Intra-kernel Tracing (Xtrace) reveals the temporal behavior inside a single kernel
 invocation: when each phase runs and how they overlap. It exposes pipeline
 bubbles, synchronization overhead, and warp-role scheduling that aggregate

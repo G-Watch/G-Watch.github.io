@@ -4,6 +4,8 @@ description: Intra-kernel tracing works across CUDA, TileLang, CuTeDSL and Trito
 order: 11
 ---
 
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+
 G-Watch supports intra-kernel tracing across multiple kernel DSLs. The workflow
 is the same in each one: add scope markers, run `do_trace`, then render the
 report. Only the marker syntax and build setup differ per DSL.

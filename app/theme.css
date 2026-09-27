@@ -318,3 +318,56 @@ body:has(#home-quickstart) footer {
     animation: none;
   }
 }
+
+/*
+ * Agent-skill strip on the Xtrace doc pages — USER-OWNED. A plain HTML button in
+ * the Markdown (content/en/docs/intra-kernel-tracing/**) whose onclick copies
+ * its data-skill; the label after it says "copy", then "copied".
+ */
+.skill-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 1.5em;
+  padding: 0.3em 0.4em 0.3em 0.8em;
+  border-radius: 999px;
+  background: var(--color-paper-deep);
+  font-size: 0.875em;
+  line-height: 1.4;
+}
+.skill-line strong {
+  color: var(--color-ink-soft);
+}
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.1em 0.55em 0.1em 0.15em;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-surface);
+  cursor: pointer;
+  vertical-align: baseline;
+  transition: border-color 0.15s ease;
+}
+.skill-chip:hover {
+  border-color: var(--color-muted);
+}
+.skill-chip code {
+  background: transparent !important;
+  border: 0 !important;
+}
+.skill-chip::after {
+  content: "copy";
+  font-size: 0.75em;
+  color: var(--color-muted);
+}
+.skill-chip.is-copied {
+  border-color: var(--color-ink);
+}
+.skill-chip.is-copied::after {
+  content: "copied";
+  color: var(--color-ink);
+}

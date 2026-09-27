@@ -4,6 +4,8 @@ description: Trace the internal phase timeline of a Triton kernel by adding devi
 order: 14
 ---
 
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+
 G-Watch can trace the internal phases of a **Triton** kernel. You mark regions
 inside the `@triton.jit` kernel with device-side scope markers, run the kernel
 under G-Watch, and get back a per-thread timeline of when each phase ran — useful

@@ -4,6 +4,8 @@ description: Trace GPU kernel at binary-level SASS.
 order: 10
 ---
 
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing_sass" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing_sass</code></button></div>
+
 ## Example
 
 See

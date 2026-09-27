@@ -4,6 +4,8 @@ description: Read a trace as an interactive panel, as compact text for an agent,
 order: 20
 ---
 
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+
 A trace renders two ways from one report. The **HTML** report is an interactive
 panel for people. The **JSON** report is the machine archive, and `gwatch show`
 renders it as compact text an agent reads directly.

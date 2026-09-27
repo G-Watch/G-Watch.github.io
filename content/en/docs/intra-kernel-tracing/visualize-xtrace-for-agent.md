@@ -4,7 +4,7 @@ description: Read a trace as an interactive panel, as compact text for an agent,
 order: 20
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace</code></button></div>
 
 A trace renders two ways from one report. The **HTML** report is an interactive
 panel for people. The **JSON** report is the machine archive, and `gwatch show`
@@ -68,7 +68,7 @@ terminal. An agent reads this text directly.
 gwatch show trace.json
 ```
 
-<img src="/media/iket_agentview.png" alt="Agent view of an intra-kernel trace rendered by gwatch show" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" />
+<img src="/media/xtrace_agentview.png" alt="Agent view of an intra-kernel trace rendered by gwatch show" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" />
 
 By default it prints the header (kernel, launch, record and row counts, scopes,
 clock, time span), the per-scope stats, the pipeline summary, and a per-thread

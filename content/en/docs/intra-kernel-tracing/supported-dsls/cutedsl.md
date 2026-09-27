@@ -4,7 +4,7 @@ description: Trace the internal phase timeline of a CuTeDSL kernel by adding dev
 order: 13
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_cutedsl" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_cutedsl</code></button></div>
 
 G-Watch can trace the internal phases of a **CuTeDSL** kernel. You mark regions
 inside the `@cute.kernel` with device-side scope markers, run the kernel under
@@ -27,7 +27,7 @@ python3 examples/cuda/trace/trace_cute_matmul.py --report trace.json
 gwatch show trace.json
 ```
 
-<video src="/media/iket_cutedsl.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
+<video src="/media/xtrace_cutedsl.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
 ## Step 1: Mark scopes in the kernel
 
@@ -36,7 +36,7 @@ Markers are **device-side** — they go inside the `@cute.kernel` body, and each
 region uses a unique integer id.
 
 ```python
-import gwatch.cuda.trace.cute as gw_trace
+import gwatch.cuda.xtrace.cute as gw_trace
 import cutlass.cute as cute
 
 @cute.kernel
@@ -56,7 +56,7 @@ def my_kernel(x: cute.Tensor, out: cute.Tensor, n: Int32):
 CuTe's JIT cubin bypasses CUPTI's module-load capture, so tracing falls back to
 CuTe's **dumped PTX**. Order matters: set `CUTE_DSL_KEEP_PTX=1` and
 `CUTE_DSL_DUMP_DIR` **before** importing `cutlass`, and import
-`gwatch.cuda.trace.cute` (which creates the capsule) and call
+`gwatch.cuda.xtrace.cute` (which creates the capsule) and call
 `init_cupti_hooks()` **before** `cutlass` too — so CUPTI is listening by the time
 `@cute.jit` triggers the module load.
 
@@ -66,8 +66,8 @@ os.environ.setdefault("CUTE_DSL_KEEP_PTX", "1")
 os.environ.setdefault("CUTE_DSL_DUMP_DIR", "/tmp/gw_cute_ptx")
 
 import gwatch.libpygwatch as pygwatch
-import gwatch.cuda.trace.cute as gw_trace          # creates the capsule
-from gwatch.cuda.trace import do_trace
+import gwatch.cuda.xtrace.cute as gw_trace          # creates the capsule
+from gwatch.cuda.xtrace import do_trace
 
 pygwatch.init_cupti_hooks()                          # install CUPTI hooks
 
@@ -100,11 +100,11 @@ A few things to note:
 
 ```python
 from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
+from gwatch.cuda.xtrace.format import Section_IntraKernelTrace
 
 section = Section_IntraKernelTrace()
 section.add_run(result)
-report = File(title="Intra-kernel trace")
+report = File(title="Xtrace")
 report.add_section(section)
 report.render("trace.html")     # interactive panel; use .json for the agent archive
 ```

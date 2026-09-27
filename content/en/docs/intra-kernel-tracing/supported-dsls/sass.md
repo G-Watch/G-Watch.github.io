@@ -4,7 +4,7 @@ description: Trace GPU kernel at binary-level SASS.
 order: 10
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing_sass" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing_sass</code></button></div>
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_sass" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_sass</code></button></div>
 
 ## Example
 
@@ -45,7 +45,7 @@ One source line maps to several instructions, so pick one from `candidates`.
 ## Step 2: Declare the sites
 
 ```python
-from gwatch.cuda.trace import SassTraceSite
+from gwatch.cuda.xtrace import SassTraceSite
 
 sites = [
     SassTraceSite(candidates[0]),                     # timestamp only
@@ -70,7 +70,7 @@ A site's `site_id` is its position in the list.
 ## Step 3: Trace
 
 ```python
-from gwatch.cuda.trace import do_trace
+from gwatch.cuda.xtrace import do_trace
 
 result = do_trace(
     fn=run_once,                          # a callable that launches and synchronizes
@@ -96,7 +96,7 @@ A record is a point. `site_regions` pairs two sites into a region:
 
 ```python
 from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
+from gwatch.cuda.xtrace.format import Section_IntraKernelTrace
 
 section = Section_IntraKernelTrace()
 section.add_run(
@@ -112,5 +112,5 @@ report.render("trace.json")     # the records and the analysis block
 
 - `scope_roles` groups the panel's rows by warp role.
 - `do_trace` calls `fn` more than once, so measure the last pass.
-- See [Visualize Xtrace for Agent](/docs/humanize/intra-kernel-tracing/visualize-iket-for-agent/)
+- See [Visualize Xtrace for Agent](/docs/humanize/intra-kernel-tracing/visualize-xtrace-for-agent/)
   for both report formats.

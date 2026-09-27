@@ -13,7 +13,7 @@ import { withBasePath } from "@/lib/paths";
  * side by side, split by a diagonal seam. On card hover the halves do a liquid
  * zoom and a glass reflection sweeps across.
  */
-function IketViews() {
+function XtraceViews() {
   return (
     <div className="relative h-44 w-full overflow-hidden bg-ink">
       {/* Human view — left half, diagonal clip. */}
@@ -22,7 +22,7 @@ function IketViews() {
         style={{ clipPath: "polygon(0 0, 56% 0, 44% 100%, 0 100%)" }}
       >
         <video
-          src={withBasePath("/media/iket_triton.mp4")}
+          src={withBasePath("/media/xtrace_triton.mp4")}
           autoPlay
           loop
           muted
@@ -41,7 +41,7 @@ function IketViews() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={withBasePath("/media/iket_agentview.png")}
+          src={withBasePath("/media/xtrace_agentview.png")}
           alt="Agent view"
           className="h-full w-full object-cover object-center"
         />
@@ -70,5 +70,5 @@ function IketViews() {
 }
 
 export const featureSlots: Record<string, ReactNode> = {
-  "iket-views": <IketViews />,
+  "xtrace-views": <XtraceViews />,
 };

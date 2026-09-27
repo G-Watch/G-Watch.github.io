@@ -4,7 +4,7 @@ description: Trace the internal phase timeline of a TileLang kernel by adding de
 order: 12
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_tilelang" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_tilelang</code></button></div>
 
 G-Watch can trace the internal phases of a **TileLang** kernel. You mark regions
 inside the `T.prim_func` with device-side scope markers, run the kernel under
@@ -27,7 +27,7 @@ python3 examples/cuda/trace/trace_tilelang_matmul.py --report trace.json
 gwatch show trace.json
 ```
 
-<video src="/media/iket_tilelang.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
+<video src="/media/xtrace_tilelang.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
 ## Step 1: Mark scopes in the kernel
 
@@ -36,7 +36,7 @@ Import the TileLang trace helper and wrap each region with `scope_start` /
 inside the kernel body; each region uses a unique integer id.
 
 ```python
-import gwatch.cuda.trace.tilelang as gw_trace
+import gwatch.cuda.xtrace.tilelang as gw_trace
 import tilelang
 import tilelang.language as T
 
@@ -70,7 +70,7 @@ explicitly with `kernel.export_ptx(...)` and point the TileLang PTX-cache loader
 ```python
 import os, tempfile
 import gwatch.libpygwatch as pygwatch
-from gwatch.cuda.trace import do_trace
+from gwatch.cuda.xtrace import do_trace
 
 pygwatch.init_cupti_hooks()   # install CUPTI hooks before the first module load
 
@@ -107,11 +107,11 @@ A few things to note:
 
 ```python
 from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
+from gwatch.cuda.xtrace.format import Section_IntraKernelTrace
 
 section = Section_IntraKernelTrace()
 section.add_run(result)
-report = File(title="Intra-kernel trace")
+report = File(title="Xtrace")
 report.add_section(section)
 report.render("trace.html")     # interactive panel; use .json for the agent archive
 ```

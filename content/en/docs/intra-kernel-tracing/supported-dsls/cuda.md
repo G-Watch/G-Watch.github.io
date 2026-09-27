@@ -4,7 +4,7 @@ description: Trace the internal phase timeline of a hand-written CUDA C++ kernel
 order: 11
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_intra_kernel_tracing" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_intra_kernel_tracing</code></button></div>
+<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_cuda" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_cuda</code></button></div>
 
 G-Watch can trace the internal phases of a raw **CUDA C++** kernel. You mark
 regions inside the kernel with device-side scope markers, run the kernel under
@@ -25,7 +25,7 @@ python3 examples/cuda/trace/trace_cuda_hgmma_matmul.py --report trace.json
 gwatch show trace.json
 ```
 
-<video src="/media/iket_cuda.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
+<video src="/media/xtrace_cuda.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
 ## Step 1: Mark scopes in the kernel
 
@@ -60,7 +60,7 @@ state.
 ```python
 import gwatch
 import gwatch.libpygwatch as pygwatch
-from gwatch.cuda.trace import do_trace
+from gwatch.cuda.xtrace import do_trace
 from torch.utils.cpp_extension import load_inline
 
 pygwatch.init_cupti_hooks()   # install CUPTI hooks before the first module load
@@ -102,11 +102,11 @@ A few things to note:
 
 ```python
 from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
+from gwatch.cuda.xtrace.format import Section_IntraKernelTrace
 
 section = Section_IntraKernelTrace()
 section.add_run(result)
-report = File(title="Intra-kernel trace")
+report = File(title="Xtrace")
 report.add_section(section)
 report.render("trace.html")     # interactive panel; use .json for the agent archive
 ```

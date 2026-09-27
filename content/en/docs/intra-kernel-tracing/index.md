@@ -1,5 +1,5 @@
 ---
-title: Intra-kernel Tracing
+title: Xtrace
 description: Trace the internal phase timeline of a single GPU kernel across CUDA, TileLang, CuTeDSL and Triton, or at the SASS level with no markers at all.
 order: 10
 ---

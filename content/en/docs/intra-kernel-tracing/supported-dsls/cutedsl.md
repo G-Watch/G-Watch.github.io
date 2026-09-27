@@ -27,7 +27,7 @@ gwatch show trace.json
 
 <video src="/media/iket_cutedsl.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
-## Mark scopes in the kernel
+## Step 1: Mark scopes in the kernel
 
 Import the CuTe trace helper and wrap each region with `scope_start` / `scope_end`.
 Markers are **device-side** — they go inside the `@cute.kernel` body, and each
@@ -49,7 +49,7 @@ def my_kernel(x: cute.Tensor, out: cute.Tensor, n: Int32):
         out[i] = v * 2.0
 ```
 
-## Build and trace
+## Step 2: Build and trace
 
 CuTe's JIT cubin bypasses CUPTI's module-load capture, so tracing falls back to
 CuTe's **dumped PTX**. Order matters: set `CUTE_DSL_KEEP_PTX=1` and
@@ -66,8 +66,6 @@ os.environ.setdefault("CUTE_DSL_DUMP_DIR", "/tmp/gw_cute_ptx")
 import gwatch.libpygwatch as pygwatch
 import gwatch.cuda.trace.cute as gw_trace          # creates the capsule
 from gwatch.cuda.trace import do_trace
-from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
 
 pygwatch.init_cupti_hooks()                          # install CUPTI hooks
 
@@ -81,14 +79,6 @@ result = do_trace(
     scope_name_map={1: "load"},           # optional: id -> label
     instrumentation_tier="ptx",
 )
-
-# Render the trace to an interactive HTML report (use a .json path for the
-# machine-readable archive).
-section = Section_IntraKernelTrace()
-section.add_run(result)
-report = File(title="Intra-kernel trace")
-report.add_section(section)
-report.render("trace.html")
 ```
 
 A few things to note:
@@ -103,5 +93,16 @@ A few things to note:
 - **`dsl="cute"`** tells G-Watch to recover PTX from CuTe's dump directory.
 - **`scope_name_map`** (optional) turns the integer ids into the labels shown in
   the report.
-- `Section_IntraKernelTrace` renders to interactive **HTML** (`.html`) or a
-  machine-readable **JSON** (`.json`) archive, picked from the output extension.
+
+## Step 3: Render the report
+
+```python
+from gwatch.common.format import File
+from gwatch.cuda.trace.format import Section_IntraKernelTrace
+
+section = Section_IntraKernelTrace()
+section.add_run(result)
+report = File(title="Intra-kernel trace")
+report.add_section(section)
+report.render("trace.html")     # interactive panel; use .json for the agent archive
+```

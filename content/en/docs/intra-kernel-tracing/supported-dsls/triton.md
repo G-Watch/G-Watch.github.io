@@ -25,7 +25,7 @@ gwatch show trace.json
 
 <video src="/media/iket_triton.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
-## Mark scopes in the kernel
+## Step 1: Mark scopes in the kernel
 
 Import the Triton trace helper and wrap each region with `scope_start` /
 `scope_end`. Markers are **device-side** — they go inside the `@triton.jit` body
@@ -51,7 +51,7 @@ def my_kernel(q, desc_k, desc_v, ...):
         # ... softmax, dot_pv, ...
 ```
 
-## Build and trace
+## Step 2: Build and trace
 
 Triton compiles through PTX, which CUPTI captures at runtime — so, unlike the
 CUDA C++ / CuTeDSL / TileLang flows, there are **no extra PTX gencode flags,
@@ -61,8 +61,6 @@ environment variables, or export steps**. Just add the markers and call
 ```python
 import gwatch.libpygwatch as pygwatch
 from gwatch.cuda.trace import do_trace
-from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
 
 pygwatch.init_cupti_hooks()   # install CUPTI hooks before the first module load
 
@@ -73,14 +71,6 @@ result = do_trace(
     scope_name_map={100: "load_kv", 101: "dot_qk"},
     instrumentation_tier="ptx",
 )
-
-# Render the trace to an interactive HTML report (use a .json path for the
-# machine-readable archive).
-section = Section_IntraKernelTrace()
-section.add_run(result)
-report = File(title="Intra-kernel trace")
-report.add_section(section)
-report.render("trace.html")
 ```
 
 A few things to note:
@@ -97,5 +87,16 @@ A few things to note:
   forward vs. backward pass).
 - If a marker edit isn't picked up, clear Triton's JIT cache
   (`rm -rf ~/.triton/cache/*`) so the instrumented kernel is recompiled.
-- `Section_IntraKernelTrace` renders to interactive **HTML** (`.html`) or a
-  machine-readable **JSON** (`.json`) archive, picked from the output extension.
+
+## Step 3: Render the report
+
+```python
+from gwatch.common.format import File
+from gwatch.cuda.trace.format import Section_IntraKernelTrace
+
+section = Section_IntraKernelTrace()
+section.add_run(result)
+report = File(title="Intra-kernel trace")
+report.add_section(section)
+report.render("trace.html")     # interactive panel; use .json for the agent archive
+```

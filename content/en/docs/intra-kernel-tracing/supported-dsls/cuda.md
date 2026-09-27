@@ -25,7 +25,7 @@ gwatch show trace.json
 
 <video src="/media/iket_cuda.mp4" controls muted loop autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--color-line);margin-top:0.5rem"></video>
 
-## Mark scopes in the kernel
+## Step 1: Mark scopes in the kernel
 
 ```cpp
 #include "gwatch/cuda/trace.hpp"
@@ -53,14 +53,12 @@ region uses a unique integer id. A marker inside a loop emits one record per
 iteration, so the trace captures every pass of the k-loop, not just the final
 state.
 
-## Build and trace
+## Step 2: Build and trace
 
 ```python
 import gwatch
 import gwatch.libpygwatch as pygwatch
 from gwatch.cuda.trace import do_trace
-from gwatch.common.format import File
-from gwatch.cuda.trace.format import Section_IntraKernelTrace
 from torch.utils.cpp_extension import load_inline
 
 pygwatch.init_cupti_hooks()   # install CUPTI hooks before the first module load
@@ -84,14 +82,6 @@ result = do_trace(
     scope_name_map={10: "load", 20: "compute", 30: "epilogue"},
     instrumentation_tier="ptx",
 )
-
-# Render the trace to an interactive HTML report (use a .json path for the
-# machine-readable archive).
-section = Section_IntraKernelTrace()
-section.add_run(result)
-report = File(title="Intra-kernel trace")
-report.add_section(section)
-report.render("trace.html")
 ```
 
 A few things to note:
@@ -105,5 +95,16 @@ A few things to note:
   (`code=compute_90a`) and SASS (`code=sm_90a`) targets.
 - **`dsl=""`** tells G-Watch this is a hand-written kernel (no DSL dump to search).
 - **`scope_name_map`** turns the integer ids into the labels shown in the report.
-- `Section_IntraKernelTrace` renders to interactive **HTML** (`.html`) or a
-  machine-readable **JSON** (`.json`) archive, picked from the output extension.
+
+## Step 3: Render the report
+
+```python
+from gwatch.common.format import File
+from gwatch.cuda.trace.format import Section_IntraKernelTrace
+
+section = Section_IntraKernelTrace()
+section.add_run(result)
+report = File(title="Intra-kernel trace")
+report.add_section(section)
+report.render("trace.html")     # interactive panel; use .json for the agent archive
+```

@@ -1,21 +1,60 @@
 // User-owned hero showcase component.
 //
 // The news feed in the hero's right-hand column: a card with a live header and
-// a dated timeline, newest on top. Entries live in lib/news.ts. Registered as
+// dated entries, newest on top. Entries live in lib/news.ts. Registered as
 // the "news" / "newsZh" slots in lib/hero-slots.tsx.
 //
-// Each row is a link. The rail runs down the left of the titles; the newest
-// entry gets a filled node, the rest hollow nodes. Static (no
-// hooks) → server component.
+// A row is a link when it has an `href`; an entry with `links` instead carries
+// a line of icon links under its title. Static (no hooks) → server component.
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { localeHtmlLang, localePath, type Locale } from "@/lib/i18n";
 import { withBasePath } from "@/lib/paths";
-import { news, NEWS_LIMIT, type NewsItem } from "@/lib/news";
+import { news, NEWS_LIMIT, type NewsItem, type NewsLinkIcon } from "@/lib/news";
 
 const COPY: Record<Locale, { heading: string }> = {
   en: { heading: "Recent Updates" },
   zh: { heading: "最近更新" },
+};
+
+/** Stroke icons for an entry's links, drawn in the text colour. */
+const icon = (children: ReactNode) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className="h-[1.05em] w-[1.05em] shrink-0"
+  >
+    {children}
+  </svg>
+);
+
+const LINK_ICONS: Record<NewsLinkIcon, ReactNode> = {
+  // an open book
+  docs: icon(
+    <>
+      <path d="M3 5.5c2.8-1.2 5.8-1 9 1 3.2-2 6.2-2.2 9-1v13c-2.8-1.2-5.8-1-9 1-3.2-2-6.2-2.2-9-1z" />
+      <path d="M12 6.5v13" />
+    </>,
+  ),
+  // a page of writing
+  blog: icon(
+    <>
+      <rect x="4" y="3.5" width="16" height="17" rx="2" />
+      <path d="M8 8.5h8M8 12h8M8 15.5h5" />
+    </>,
+  ),
+  // a paper with a folded corner
+  paper: icon(
+    <>
+      <path d="M6 2.5h8l4.5 4.5v14.5H6z" />
+      <path d="M14 2.5V7h4.5M9 12h6M9 15.5h6" />
+    </>,
+  ),
 };
 
 function day(iso: string, lang: Locale): string {
@@ -54,23 +93,15 @@ function RowLink({
   );
 }
 
-function NewsRow({
-  item,
-  lang,
-  first,
-  last,
-}: {
-  item: NewsItem;
-  lang: Locale;
-  first: boolean;
-  last: boolean;
-}) {
+function NewsRow({ item, lang }: { item: NewsItem; lang: Locale }) {
   return (
     <li>
       <RowLink
         href={item.href}
         lang={lang}
-        className="group grid grid-cols-[4.25rem_1.25rem_minmax(0,1fr)] rounded-xl px-2 transition-colors hover:bg-paper-deep"
+        className={`group grid grid-cols-[4.25rem_minmax(0,1fr)] rounded-xl px-2 transition-colors ${
+          item.href ? "hover:bg-paper-deep" : ""
+        }`}
       >
         {/* Date */}
         <time
@@ -80,32 +111,14 @@ function NewsRow({
           {day(item.date, lang)}
         </time>
 
-        {/* Rail + node. The rail is cut at the first and last node so it
-            starts and ends on an entry rather than on the card's edge; a
-            lone entry has none. */}
-        <div className="relative flex justify-center">
-          {!(first && last) && (
-            <span
-              aria-hidden
-              className={`absolute w-px bg-line ${first ? "top-[1.3rem]" : "top-0"} ${
-                last ? "h-[1.3rem]" : "bottom-0"
-              }`}
-            />
-          )}
-          <span
-            aria-hidden
-            className={`relative mt-[1.05rem] h-2.5 w-2.5 rounded-full transition-transform duration-200 group-hover:scale-125 ${
-              first
-                ? "bg-ink ring-4 ring-accent-soft"
-                : "border-2 border-line bg-surface group-hover:border-ink"
-            }`}
-          />
-        </div>
-
         {/* Body */}
         <div className="min-w-0 py-3 pl-2 pr-1">
           <p className="flex items-baseline gap-2 text-base font-bold leading-snug text-ink">
-            <span className="min-w-0 truncate decoration-line underline-offset-4 group-hover:underline">
+            <span
+              className={`min-w-0 truncate decoration-line underline-offset-4 ${
+                item.href ? "group-hover:underline" : ""
+              }`}
+            >
               {item.title}
             </span>
             {item.href && (
@@ -122,6 +135,21 @@ function NewsRow({
               {item.summary}
             </p>
           )}
+          {item.links && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+              {item.links.map((link) => (
+                <RowLink
+                  key={link.label}
+                  href={link.href}
+                  lang={lang}
+                  className="inline-flex items-center gap-1 text-sm text-ink-soft decoration-line underline-offset-4 transition-colors hover:text-ink hover:underline"
+                >
+                  {LINK_ICONS[link.icon]}
+                  {link.label}
+                </RowLink>
+              ))}
+            </div>
+          )}
         </div>
       </RowLink>
       {item.video && (
@@ -131,7 +159,7 @@ function NewsRow({
             poster={item.video.poster ? withBasePath(item.video.poster) : undefined}
             aria-label={item.video.alt}
             width={1200}
-            height={710}
+            height={750}
             autoPlay
             loop
             muted
@@ -165,13 +193,11 @@ export function HeroNews({ lang = "en" }: { lang?: Locale }) {
         </h2>
       </header>
       <ol className="px-3 py-2">
-        {items.map((item, i) => (
+        {items.map((item) => (
           <NewsRow
             key={`${item.date}-${item.title}`}
             item={item}
             lang={lang}
-            first={i === 0}
-            last={i === items.length - 1}
           />
         ))}
       </ol>

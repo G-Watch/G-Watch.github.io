@@ -5246,6 +5246,10 @@ export interface OpenTracesCopy {
   kernelSearchHint: string;
   /** Resets every column filter at once. */
   clearFilters: string;
+  /** Guidance in the empty columns, before an architecture is picked. */
+  pickArch: string;
+  /** Guidance in the empty table, before a kernel is picked. */
+  pickKernel: string;
 }
 
 export const openTracesCopy: Record<Locale, OpenTracesCopy> = {
@@ -5284,6 +5288,8 @@ export const openTracesCopy: Record<Locale, OpenTracesCopy> = {
     expand: "Expand",
     filterHint: "filter…",
     kernelSearchHint: "search kernels…",
+    pickArch: "Pick an architecture on the left",
+    pickKernel: "Pick a kernel to see its traces",
     clearFilters: "Clear filters",
   },
   zh: {
@@ -5321,6 +5327,8 @@ export const openTracesCopy: Record<Locale, OpenTracesCopy> = {
     expand: "展开",
     filterHint: "过滤…",
     kernelSearchHint: "搜索 kernel…",
+    pickArch: "先在左侧选择一个架构",
+    pickKernel: "选择一个 kernel，查看它的 trace",
     clearFilters: "清除过滤",
   },
 };

@@ -42,6 +42,30 @@ const FIELD =
   "w-full min-w-0 rounded border border-line bg-surface px-2 py-1 text-xs text-ink transition-colors placeholder:text-muted/50 hover:border-muted/40 focus:border-accent focus:outline-none";
 
 /** A dashed stand-in for a value the catalog does not have yet. */
+/**
+ * What to do next, in an empty region: an arrow nudging toward the column to
+ * pick from, and one line of text.
+ */
+function PickHint({ text, className = "" }: { text: string; className?: string }) {
+  return (
+    <p className={`pick-hint flex items-center gap-2.5 text-sm text-muted ${className}`}>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className="pick-nudge h-4 w-4 shrink-0"
+      >
+        <path d="M19 12H5M11 6l-6 6 6 6" />
+      </svg>
+      <span>{text}</span>
+    </p>
+  );
+}
+
 function Ghost({ className = "w-20" }: { className?: string }) {
   return (
     <span
@@ -146,6 +170,7 @@ function TreeLevel({
   expanded,
   onSelect,
   onToggle,
+  beckon = false,
 }: {
   nodes: TraceTreeNode[];
   depth: number;
@@ -153,6 +178,8 @@ function TreeLevel({
   expanded: Set<string>;
   onSelect: (node: TraceTreeNode) => void;
   onToggle: (key: string) => void;
+  /** Nothing is picked yet: the leaves, which are what to pick, breathe. */
+  beckon?: boolean;
 }) {
   return (
     <ul
@@ -187,7 +214,11 @@ function TreeLevel({
                   ▸
                 </button>
               ) : (
-                <span className="h-6 w-4 shrink-0" />
+                <span className="flex h-6 w-4 shrink-0 items-center justify-center">
+                  {beckon && (
+                    <span aria-hidden className="pick-beckon h-1.5 w-1.5 rounded-full bg-accent" />
+                  )}
+                </span>
               )}
               <button
                 type="button"
@@ -210,6 +241,7 @@ function TreeLevel({
                   expanded={expanded}
                   onSelect={onSelect}
                   onToggle={onToggle}
+                  beckon={beckon}
                 />
               </div>
             )}
@@ -260,7 +292,9 @@ function KernelColumn({
             ))}
           </div>
         </>
-      ) : !hasSelection ? null : (
+      ) : !hasSelection ? (
+        <PickHint text={copy.pickArch} className="mt-1" />
+      ) : (
         <>
           <input
             type="text"
@@ -1109,6 +1143,7 @@ export function OpenTracesBrowser({
                     )
                   }
                   onToggle={toggle}
+                  beckon={!hasArch}
                 />
               </>
             ) : (
@@ -1221,6 +1256,16 @@ export function OpenTracesBrowser({
                 </thead>
                 {hasRecords ? (
                   <tbody>
+                    {!activeKernel && (
+                      <tr>
+                        <td colSpan={columns.length + 1} className="py-16">
+                          <PickHint
+                            text={hasArch ? copy.pickKernel : copy.pickArch}
+                            className="justify-center"
+                          />
+                        </td>
+                      </tr>
+                    )}
                     {records.map((record) => (
                       <TraceRow
                         key={pathKey(pathOf(record))}

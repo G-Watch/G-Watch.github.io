@@ -259,3 +259,62 @@ html.home-scroll footer {
 body:has(#home-quickstart) footer {
   margin-top: 0;
 }
+
+/*
+ * Open Traces guidance — USER-OWNED. Drawn by components/open-traces-browser.tsx
+ * in the regions that stay empty until a vendor branch and a kernel are picked:
+ * an arrow that nudges toward the column to pick from, and a breathing dot on
+ * each architecture leaf while none is picked.
+ */
+@keyframes pick-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pick-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+}
+
+@keyframes pick-beckon {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.pick-hint {
+  animation: pick-in 0.5s ease-out both;
+}
+
+.pick-nudge {
+  animation: pick-nudge 1.4s ease-in-out infinite;
+}
+
+.pick-beckon {
+  animation: pick-beckon 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick-hint,
+  .pick-nudge,
+  .pick-beckon {
+    animation: none;
+  }
+}

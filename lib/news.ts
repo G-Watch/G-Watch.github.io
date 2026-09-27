@@ -5,6 +5,8 @@
 // first NEWS_LIMIT entries are shown.
 import type { Locale } from "./i18n";
 
+export type NewsLinkIcon = "docs" | "blog" | "paper";
+
 export interface NewsItem {
   /** ISO date, e.g. "2026-09-10". */
   date: string;
@@ -12,6 +14,8 @@ export interface NewsItem {
   /** A sentence under the title; wraps if it has to. */
   summary?: string;
   href?: string;
+  /** Icon links after the title, for an entry that has several places to go. */
+  links?: { label: string; href: string; icon: NewsLinkIcon }[];
   /** A looping clip under the entry; paths under public/. */
   video?: { src: string; poster?: string; alt: string };
 }
@@ -22,26 +26,34 @@ export const news: Record<Locale, NewsItem[]> = {
   en: [
     {
       date: "2026-08-25",
-      title: "Open Traces is live",
-      summary: "A public catalog of intra-kernel traces for major LLM production kernels, powered by Xtrace.",
-      href: "/open-traces/",
+      title: "We release Xtrace!",
+      summary: "High-fidelity GPU kernel tracing for your code agent",
+      links: [
+        { label: "Docs", href: "/docs/humanize/intra-kernel-tracing/index/", icon: "docs" },
+        { label: "Blog", href: "/blog/humanize/releasing-xtrace/", icon: "blog" },
+        { label: "Paper", href: "https://arxiv.org/abs/2609.28769", icon: "paper" },
+      ],
       video: {
-        src: "/news/open-traces-en.mp4",
-        poster: "/news/open-traces-en-poster.webp",
-        alt: "The trace panel: hover, zoom into time and threads, pan, measure a span, reset.",
+        src: "/news/xtrace-agent-en.mp4",
+        poster: "/news/xtrace-agent-en-poster.webp",
+        alt: "A code agent traces a FlashAttention-4 kernel; a region is selected in the trace, copied, and pasted back to the agent, which finds the stall and fixes it.",
       },
     },
   ],
   zh: [
     {
       date: "2026-08-25",
-      title: "开放 Trace 上线",
-      summary: "面向主流 LLM 生产 kernel 的公开核内 trace 目录，由 Xtrace 驱动。",
-      href: "/open-traces/",
+      title: "Xtrace 发布！",
+      summary: "为你的代码智能体提供高保真的 GPU kernel 追踪",
+      links: [
+        { label: "文档", href: "/docs/humanize/intra-kernel-tracing/index/", icon: "docs" },
+        { label: "博客", href: "/blog/humanize/releasing-xtrace/", icon: "blog" },
+        { label: "论文", href: "https://arxiv.org/abs/2609.28769", icon: "paper" },
+      ],
       video: {
-        src: "/news/open-traces-zh.mp4",
-        poster: "/news/open-traces-zh-poster.webp",
-        alt: "Trace 面板：悬停、缩放时间与线程、平移、测量区间、复位。",
+        src: "/news/xtrace-agent-zh.mp4",
+        poster: "/news/xtrace-agent-zh-poster.webp",
+        alt: "代码智能体追踪 FlashAttention-4 kernel；在 trace 里框选一块区域、复制并贴回给智能体，它据此找到停顿并完成优化。",
       },
     },
   ],

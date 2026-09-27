@@ -204,9 +204,14 @@ On the fourth it runs 5.2% faster.
 
 ## More traces
 
-We publish more traces of closed-source kernels in [Open Traces](/open-traces/).
+[Open Traces](/open-traces/) publishes more Xtrace traces of closed-source vendor kernels.
 You can open each one in your browser.
+
+- cuDNN's flash attention forward (SDPA) on B300, at five shapes.
+- cuDNN's convolution forward (implicit GEMM) on H100.
+- cuBLAS's nvjet GEMM on B300 and H100.
+- A TensorRT-LLM GEMM on B300 that multiplies FP8 activations by NVFP4 weights.
 
 ## Get started
 
-{/* Usage guide: to be written. */}
+See the [Xtrace docs](/docs/humanize/intra-kernel-tracing/index/) to trace your own kernels.

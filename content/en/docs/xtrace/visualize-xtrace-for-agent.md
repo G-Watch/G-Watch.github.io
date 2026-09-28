@@ -1,6 +1,6 @@
 ---
 title: Read Xtrace with Your Agent
-description: How to generate an Xtrace report, read it as an HTML panel or as `gwatch show` text, and hand a selected region to an agent.
+description: How to generate an Xtrace report and read it with an agent.
 order: 20
 ---
 

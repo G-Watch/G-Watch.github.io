@@ -278,7 +278,7 @@ function KernelColumn({
   onCollapse: () => void;
 }) {
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <div className={`${LABEL} mb-2 flex items-center justify-between gap-2`}>
         <span className="truncate">{copy.levels.kernel}</span>
         <CollapseButton onClick={onCollapse} label={copy.collapse} />
@@ -293,7 +293,9 @@ function KernelColumn({
           </div>
         </>
       ) : !hasSelection ? (
-        <PickHint text={copy.pickArch} className="mt-1" />
+        <div className="flex flex-1 items-center justify-center pb-16">
+          <PickHint text={copy.pickArch} />
+        </div>
       ) : (
         <>
           <input
@@ -1161,7 +1163,7 @@ export function OpenTracesBrowser({
             expandLabel={copy.expand}
           />
         ) : (
-          <div className="lg:w-[200px]">
+          <div className="h-full lg:w-[200px]">
             <KernelColumn
               kernels={kernels}
               query={kernelQuery}
@@ -1199,8 +1201,8 @@ export function OpenTracesBrowser({
           </>
         ) : (
           <>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full border-collapse">
+            <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+              <table className="w-full shrink-0 border-collapse">
                 {/* Stays put while the rows scroll under it. */}
                 <thead className="sticky top-0 z-10 bg-paper">
                   <tr>
@@ -1256,16 +1258,6 @@ export function OpenTracesBrowser({
                 </thead>
                 {hasRecords ? (
                   <tbody>
-                    {!activeKernel && (
-                      <tr>
-                        <td colSpan={columns.length + 1} className="py-16">
-                          <PickHint
-                            text={hasArch ? copy.pickKernel : copy.pickArch}
-                            className="justify-center"
-                          />
-                        </td>
-                      </tr>
-                    )}
                     {records.map((record) => (
                       <TraceRow
                         key={pathKey(pathOf(record))}
@@ -1281,6 +1273,13 @@ export function OpenTracesBrowser({
                   <GhostRows columns={columns} />
                 )}
               </table>
+              {/* Until a kernel is picked the table has no rows: say what to
+                  pick, in the middle of the space the rows will fill. */}
+              {hasRecords && !activeKernel && (
+                <div className="flex flex-1 items-center justify-center pb-16">
+                  <PickHint text={hasArch ? copy.pickKernel : copy.pickArch} />
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex items-center gap-4">

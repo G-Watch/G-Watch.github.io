@@ -4,11 +4,18 @@ description: An overview of Xtrace, its two instrumentation levels and the two w
 order: 10
 ---
 
-<div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace</code></button></div>
+<SkillLine name="gwatch_cuda_xtrace" />
 
 Xtrace records when each phase of a GPU kernel runs.
 The timeline shows how phases overlap and where the pipeline stalls.
 Aggregate counters cannot show either.
+
+<OpenTrace
+  trace="/traces/flash-attention-4-fwd-sm103a-bf16-hdim64-b2s1024h8-sass.json"
+  blocks={2}
+  phases="prod.kvload, mma.pv_turn, sm_a.turn, sm_b.turn, epi.tile"
+  caption="A live Xtrace trace of FlashAttention-4."
+/>
 
 ## Trace at the SASS level
 
@@ -38,4 +45,13 @@ Agents read compact text from
 [`gwatch show`](/docs/humanize/xtrace/visualize-xtrace-for-agent/).
 A region marked in the panel can be copied and pasted to an agent.
 
-<div style="display:flex;gap:1rem;align-items:flex-start;margin-top:0.5rem"><figure style="flex:1.571;min-width:0;margin:0"><img src="/media/xtrace_humanview.png" alt="Human view: interactive HTML report" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" /><figcaption style="text-align:center;font-size:0.85em;color:var(--color-muted);margin-top:0.4rem">Human view (HTML report)</figcaption></figure><figure style="flex:1.386;min-width:0;margin:0"><img src="/media/xtrace_agentview.png" alt="Agent view: gwatch show terminal output" style="width:100%;border-radius:12px;border:1px solid var(--color-line)" /><figcaption style="text-align:center;font-size:0.85em;color:var(--color-muted);margin-top:0.4rem">Agent view (gwatch show)</figcaption></figure></div>
+<div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", marginTop: "0.5rem" }}>
+  <figure style={{ flex: 1.571, minWidth: 0, margin: 0 }}>
+    <img src="/media/xtrace_humanview.png" alt="Human view: interactive HTML report" style={{ width: "100%", borderRadius: 12, border: "1px solid var(--color-line)" }} />
+    <figcaption style={{ textAlign: "center", fontSize: "0.85em", color: "var(--color-muted)", marginTop: "0.4rem" }}>Human view (HTML report)</figcaption>
+  </figure>
+  <figure style={{ flex: 1.386, minWidth: 0, margin: 0 }}>
+    <img src="/media/xtrace_agentview.png" alt="Agent view: gwatch show terminal output" style={{ width: "100%", borderRadius: 12, border: "1px solid var(--color-line)" }} />
+    <figcaption style={{ textAlign: "center", fontSize: "0.85em", color: "var(--color-muted)", marginTop: "0.4rem" }}>Agent view (gwatch show)</figcaption>
+  </figure>
+</div>

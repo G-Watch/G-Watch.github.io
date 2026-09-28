@@ -182,15 +182,7 @@ export function Fa3AgentCase() {
   const [hidden, setHidden] = useState<Set<Arm>>(new Set());
 
   return (
-    <Figure
-      caption={
-        <>
-          An agent optimizes FlashAttention-3 on H100. The four sessions differ
-          only in the profile they read. Hover to read values. Click a legend
-          entry to hide its curve.
-        </>
-      }
-    >
+    <Figure caption={<>Agentic optimization of FlashAttention-3 on H100.</>}>
       <div
         className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2"
         role="group"
@@ -779,15 +771,7 @@ export function Fa4CudnnCase() {
   const [zoom, setZoom] = useState<[number, number] | null>(null);
 
   return (
-    <Figure
-      caption={
-        <>
-          Traces of FlashAttention-4 and the closed-source cuDNN SDPA kernel on
-          B300 (b8 h16 s1024). Switch kernels on top. Drag across the per-SM
-          trace to zoom in.
-        </>
-      }
-    >
+    <Figure caption={<>FlashAttention-4 against cuDNN SDPA on B300.</>}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div
           className="inline-flex rounded-full border border-line bg-paper-deep p-1"

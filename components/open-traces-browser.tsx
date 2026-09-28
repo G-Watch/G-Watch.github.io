@@ -29,15 +29,6 @@ const pathKey = (path: string[]) => path.join(" ▸ ");
 
 const LABEL = "text-xs text-muted";
 
-/** Keys of every node that has children — the tree starts fully open. */
-function branchKeys(nodes: TraceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.children.length > 0
-      ? [pathKey(node.path), ...branchKeys(node.children)]
-      : [],
-  );
-}
-
 const FIELD =
   "w-full min-w-0 rounded border border-line bg-surface px-2 py-1 text-xs text-ink transition-colors placeholder:text-muted/50 hover:border-muted/40 focus:border-accent focus:outline-none";
 
@@ -944,9 +935,12 @@ export function OpenTracesBrowser({
   // reader arranged the browser rather than what they are looking at — so they
   // are kept instead, and a remount finds the tree, the filters and the search
   // exactly as they were left.
+  // The tree starts closed: a reader opens the one vendor they came for rather
+  // than scrolling past every branch of the catalog. A path named in the query
+  // string still shows, because a node on the selection opens regardless.
   const [expanded, setExpanded] = useKeptState<Set<string>>(
     "open-traces:expanded",
-    () => new Set(branchKeys(buildTraceTree(catalog, NAV_LEVELS.length))),
+    () => new Set<string>(),
   );
   const [kernelQuery, setKernelQuery] = useKeptState("open-traces:search", "");
   const [pickedKernel, setPickedKernel] = useState<string | null>(() =>

@@ -1,20 +1,18 @@
 ---
 title: TileLang
-description: Trace the internal phase timeline of a TileLang kernel by adding device-side scope markers.
+description: How to trace a TileLang kernel with scope markers in its source.
 order: 12
 ---
 
 <div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_tilelang" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_tilelang</code></button></div>
 
-G-Watch can trace the internal phases of a **TileLang** kernel. You mark regions
-inside the `T.prim_func` with device-side scope markers, run the kernel under
-G-Watch, and get back a per-thread timeline of when each phase ran — useful for
-spotting pipeline bubbles, synchronization overhead, and warp-role scheduling.
+Scope markers delimit regions of a **TileLang** kernel.
+G-Watch records when each region runs on every thread.
 
 ## Example
 
-A runnable example is available at
-[`examples/cuda/trace/trace_tilelang_matmul.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_tilelang_matmul.py).
+The runnable example is
+`examples/cuda/trace/trace_tilelang_matmul.py`.
 
 ```bash
 pip install tilelang
@@ -31,9 +29,9 @@ gwatch show trace.json
 
 ## Step 1: Mark scopes in the kernel
 
-Import the TileLang trace helper and wrap each region with `scope_start` /
-`scope_end`. The markers are TIR statements, so emit them through `T.evaluate(...)`
-inside the kernel body; each region uses a unique integer id.
+Wrap each region with `scope_start` and `scope_end` from the TileLang trace helper.
+The markers are TIR statements, so emit them through `T.evaluate(...)`.
+Each region needs a unique integer id.
 
 ```python
 import gwatch.cuda.xtrace.tilelang as gw_trace
@@ -62,10 +60,9 @@ def make_mul(n, block):
 
 ## Step 2: Build and trace
 
-TileLang compiles to a single-arch `.cubin` (pure SASS, **no embedded PTX**), so
-CUPTI's module capture has no PTX to hand to the tracer. Export the kernel's PTX
-explicitly with `kernel.export_ptx(...)` and point the TileLang PTX-cache loader
-(`TILELANG_CACHE_PATH`) at it so tracing can find and instrument it.
+TileLang builds a `.cubin` with **no embedded PTX**, so CUPTI captures no PTX for the tracer.
+Export the PTX with `kernel.export_ptx(...)`.
+Then point `TILELANG_CACHE_PATH` at it so tracing can find it.
 
 ```python
 import os, tempfile
@@ -85,7 +82,7 @@ os.environ["TILELANG_CACHE_PATH"] = ptx_dir
 result = do_trace(
     fn=lambda: kernel(x, y),              # first execution of the kernel
     kernel_name_pattern=r".*main.*",      # regex on the mangled prototype
-    dsl="tilelang",                       # TileLang — trace uses the exported PTX
+    dsl="tilelang",                       # TileLang: trace uses the exported PTX
     scope_name_map={1: "load", 2: "store"},
     instrumentation_tier="ptx",
 )
@@ -93,12 +90,11 @@ result = do_trace(
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
-  trace machine instructions in a compiled cubin instead — no markers, no
-  rebuild — see
-  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
-- **Export PTX.** TileLang's cubin has no embedded PTX, so `kernel.export_ptx(...)`
-  plus `TILELANG_CACHE_PATH` are required for tracing to find the kernel's PTX.
+- **`instrumentation_tier="ptx"`** traces the scopes marked in source.
+  To trace a compiled cubin without markers, see
+  [SASS](/docs/humanize/xtrace/supported-dsls/sass/).
+- **Export PTX.** Tracing needs `kernel.export_ptx(...)` and
+  `TILELANG_CACHE_PATH` to find the kernel's PTX.
 - **`dsl="tilelang"`** tells G-Watch to recover PTX from the exported cache.
 - **`scope_name_map`** (optional) turns the integer ids into the labels shown in
   the report.

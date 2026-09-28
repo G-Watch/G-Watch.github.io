@@ -1,20 +1,18 @@
 ---
 title: Triton
-description: Trace the internal phase timeline of a Triton kernel by adding device-side scope markers.
+description: How to trace a Triton kernel with scope markers in its source.
 order: 14
 ---
 
 <div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_triton" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_triton</code></button></div>
 
-G-Watch can trace the internal phases of a **Triton** kernel. You mark regions
-inside the `@triton.jit` kernel with device-side scope markers, run the kernel
-under G-Watch, and get back a per-thread timeline of when each phase ran — useful
-for spotting pipeline bubbles, synchronization overhead, and warp-role scheduling.
+Scope markers delimit regions of a **Triton** kernel.
+G-Watch records when each region runs on every thread.
 
 ## Example
 
-A runnable example is available at
-[`examples/cuda/trace/trace_triton_attention.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_triton_attention.py).
+The runnable example is
+`examples/cuda/trace/trace_triton_attention.py`.
 
 ```bash
 # for humanized visualization
@@ -29,10 +27,9 @@ gwatch show trace.json
 
 ## Step 1: Mark scopes in the kernel
 
-Import the Triton trace helper and wrap each region with `scope_start` /
-`scope_end`. Markers are **device-side** — they go inside the `@triton.jit` body
-(for example around each phase of an inner loop), and each region uses a unique
-integer id.
+Wrap each region with `scope_start` and `scope_end` from the Triton trace helper.
+Markers go inside the `@triton.jit` body, for example around each phase of an inner loop.
+Each region needs a unique integer id.
 
 ```python
 import triton
@@ -55,10 +52,9 @@ def my_kernel(q, desc_k, desc_v, ...):
 
 ## Step 2: Build and trace
 
-Triton compiles through PTX, which CUPTI captures at runtime — so, unlike the
-CUDA C++ / CuTeDSL / TileLang flows, there are **no extra PTX gencode flags,
-environment variables, or export steps**. Just add the markers and call
-`do_trace` with `dsl="triton"`.
+Triton compiles through PTX, and CUPTI captures it at runtime.
+So Triton needs **no extra flags, env vars or export steps**.
+Add the markers and call `do_trace` with `dsl="triton"`.
 
 ```python
 import gwatch.libpygwatch as pygwatch
@@ -69,7 +65,7 @@ pygwatch.init_cupti_hooks()   # install CUPTI hooks before the first module load
 result = do_trace(
     fn=lambda: run_my_kernel(...),        # first execution of the kernel
     kernel_name_pattern=r".*my_kernel.*", # regex on the mangled prototype
-    dsl="triton",                         # Triton — PTX captured at runtime
+    dsl="triton",                         # Triton: PTX captured at runtime
     scope_name_map={100: "load_kv", 101: "dot_qk"},
     instrumentation_tier="ptx",
 )
@@ -77,18 +73,17 @@ result = do_trace(
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
-  trace machine instructions in a compiled cubin instead — no markers, no
-  rebuild — see
-  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
-- **No PTX setup needed.** Triton emits PTX that CUPTI captures at runtime, so no
-  gencode flags or PTX export are required.
+- **`instrumentation_tier="ptx"`** traces the scopes marked in source.
+  To trace a compiled cubin without markers, see
+  [SASS](/docs/humanize/xtrace/supported-dsls/sass/).
+- **No PTX setup needed.** CUPTI captures Triton's PTX at runtime.
 - **`dsl="triton"`** tells G-Watch the kernel is a Triton kernel.
 - **`scope_name_map`** (optional) turns the integer ids into the labels shown in
-  the report. Use `kernel_name_pattern` to pick a specific kernel (e.g. the
-  forward vs. backward pass).
-- If a marker edit isn't picked up, clear Triton's JIT cache
-  (`rm -rf ~/.triton/cache/*`) so the instrumented kernel is recompiled.
+  the report.
+- **`kernel_name_pattern`** picks one kernel, for example the forward pass or the
+  backward pass.
+- If a marker edit does not show up, clear Triton's JIT cache with
+  `rm -rf ~/.triton/cache/*`.
 
 ## Step 3: Render the report
 

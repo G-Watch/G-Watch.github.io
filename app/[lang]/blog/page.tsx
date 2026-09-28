@@ -31,13 +31,9 @@ export default async function BlogIndexPage({
     <SiteShell lang={lang}>
       <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8">
         <header className="text-center">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-            {t.eyebrow}
-          </p>
-          <h1 className="mt-3 font-serif text-5xl font-bold text-ink">
+          <h1 className="font-serif text-5xl font-bold text-ink">
             {t.title}
           </h1>
-          <p className="mt-4 leading-relaxed text-ink-soft">{t.intro}</p>
         </header>
 
         <div className="mt-14 space-y-10">

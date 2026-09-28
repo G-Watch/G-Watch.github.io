@@ -20,7 +20,13 @@ import type { Locale } from "@/lib/i18n";
  * (index 0 is treated as "latest", i.e. what `pip3 install gwatch` resolves
  * to, and feeds the GitHub Release asset URLs below).
  */
-const GWATCH_VERSIONS = ["0.0.35", "0.0.34", "0.0.33", "0.0.32", "0.0.31"] as const;
+const GWATCH_VERSIONS = [
+  "0.0.35",
+  "0.0.34",
+  "0.0.33",
+  "0.0.32",
+  "0.0.31",
+] as const;
 const LATEST_VERSION = GWATCH_VERSIONS[0];
 const releaseBase = (version: string) =>
   `https://github.com/mars-compute-ai/G-Watch/releases/download/v${version}`;
@@ -46,12 +52,6 @@ const STRINGS = {
     copied: "Copied!",
     defaultBadge: "default",
     latestBadge: "latest",
-    pypiNote: (v: string) =>
-      `Installs gwatch ${v} from PyPI (built against CUDA ${DEFAULT_CUDA}).`,
-    ghNote: (cu: string, v: string) =>
-      `Installs the CUDA ${cu} wheel from the v${v} GitHub Release.`,
-    py312Note:
-      "Prebuilt wheels target Python 3.12 on x86_64 Linux (manylinux_2_28).",
     rocmTitle: "ROCm wheels are available on request",
     rocmBody:
       "AMD (ROCm) support is maintained privately and not published to PyPI. Contact us and we will send you a wheel matching your ROCm version.",
@@ -67,12 +67,6 @@ const STRINGS = {
     copied: "已复制!",
     defaultBadge: "默认",
     latestBadge: "最新",
-    pypiNote: (v: string) =>
-      `从 PyPI 安装 gwatch ${v}(基于 CUDA ${DEFAULT_CUDA} 构建)。`,
-    ghNote: (cu: string, v: string) =>
-      `从 v${v} GitHub Release 安装 CUDA ${cu} 对应的 wheel。`,
-    py312Note:
-      "预编译 wheel 面向 x86_64 Linux 上的 Python 3.12(manylinux_2_28)。",
     rocmTitle: "ROCm wheel 需联系我们获取",
     rocmBody:
       "AMD(ROCm)支持为私有维护,未发布到 PyPI。联系我们,我们会提供与你的 ROCm 版本匹配的 wheel。",
@@ -147,7 +141,7 @@ function CommandBlock({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <p className="font-mono text-xs text-muted">{label}</p>
+        <p className="text-sm font-bold text-ink">{label}</p>
         <button
           type="button"
           onClick={copy}
@@ -185,7 +179,10 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
     "install:platform",
     "cuda",
   );
-  const [cuda, setCuda] = useKeptState<CudaVersion>("install:cuda", DEFAULT_CUDA);
+  const [cuda, setCuda] = useKeptState<CudaVersion>(
+    "install:cuda",
+    DEFAULT_CUDA,
+  );
 
   // Client-side initialization (static export, so both are read on mount):
   //  - locale from the /en/ | /zh/ URL prefix when no explicit `lang` prop
@@ -211,10 +208,14 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
     <div className="not-prose my-8 overflow-hidden rounded-2xl border border-line bg-surface">
       {/* G-Watch version row */}
       <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-        <p className="font-mono text-xs text-muted">{t.gwatchVersion}</p>
+        <p className="text-sm font-bold text-ink-soft">{t.gwatchVersion}</p>
         <div className="flex flex-wrap gap-2">
           {GWATCH_VERSIONS.map((v) => (
-            <OptionButton key={v} active={version === v} onClick={() => setVersion(v)}>
+            <OptionButton
+              key={v}
+              active={version === v}
+              onClick={() => setVersion(v)}
+            >
               {v}
               {v === LATEST_VERSION && (
                 <span className="ml-1.5 rounded bg-accent/15 px-1 py-0.5 text-[0.7em]">
@@ -228,12 +229,18 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
 
       {/* Platform row */}
       <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-        <p className="font-mono text-xs text-muted">{t.platform}</p>
+        <p className="text-sm font-bold text-ink-soft">{t.platform}</p>
         <div className="flex flex-wrap gap-2">
-          <OptionButton active={platform === "cuda"} onClick={() => setPlatform("cuda")}>
+          <OptionButton
+            active={platform === "cuda"}
+            onClick={() => setPlatform("cuda")}
+          >
             CUDA
           </OptionButton>
-          <OptionButton active={platform === "rocm"} onClick={() => setPlatform("rocm")}>
+          <OptionButton
+            active={platform === "rocm"}
+            onClick={() => setPlatform("rocm")}
+          >
             ROCm
           </OptionButton>
         </div>
@@ -242,10 +249,14 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
       {/* CUDA version row */}
       {platform === "cuda" && (
         <div className="grid gap-3 border-b border-line p-5 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-          <p className="font-mono text-xs text-muted">{t.cudaVersion}</p>
+          <p className="text-sm font-bold text-ink-soft">{t.cudaVersion}</p>
           <div className="flex flex-wrap gap-2">
             {CUDA_VERSIONS.map((v) => (
-              <OptionButton key={v} active={cuda === v} onClick={() => setCuda(v)}>
+              <OptionButton
+                key={v}
+                active={cuda === v}
+                onClick={() => setCuda(v)}
+              >
                 {v}
                 {v === DEFAULT_CUDA && (
                   <span className="ml-1.5 rounded bg-accent/15 px-1 py-0.5 text-[0.7em]">
@@ -273,15 +284,13 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
             copyLabel={t.copy}
             copiedLabel={t.copied}
           />
-          <p className="text-xs leading-relaxed text-muted">
-            {cuda === DEFAULT_CUDA ? t.pypiNote(version) : t.ghNote(cuda, version)}{" "}
-            {t.py312Note}
-          </p>
         </div>
       ) : (
         <div className="p-5">
           <div className="rounded-xl border border-dashed border-accent/40 bg-accent-soft/40 p-6">
-            <p className="font-serif text-lg font-bold text-ink">{t.rocmTitle}</p>
+            <p className="font-serif text-lg font-bold text-ink">
+              {t.rocmTitle}
+            </p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
               {t.rocmBody}
             </p>
@@ -294,7 +303,9 @@ export function InstallWizard({ lang }: { lang?: Locale }) {
               >
                 {t.rocmCta}
               </a>
-              <span className="font-mono text-xs text-muted">{CONTACT_EMAIL}</span>
+              <span className="font-mono text-xs text-muted">
+                {CONTACT_EMAIL}
+              </span>
             </div>
           </div>
         </div>

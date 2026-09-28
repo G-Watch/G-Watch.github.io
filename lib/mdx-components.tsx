@@ -26,6 +26,9 @@ import {
 } from "@/lib/blog/xtrace-ascii";
 import { OpenTrace } from "@/lib/blog/open-trace";
 import { PaperLink, PaperLinkText } from "@/lib/blog/paper-link";
+import { InstrumentLevels } from "@/lib/docs/instrument-levels";
+import { InstrumentLevelsText } from "@/lib/docs/instrument-levels-text";
+import { SkillLine, SkillLineText } from "@/lib/docs/skill-line";
 
 export const mdxComponents = {
   InstallWizard,
@@ -34,6 +37,8 @@ export const mdxComponents = {
   InstrumentStack,
   OpenTrace,
   PaperLink,
+  InstrumentLevels,
+  SkillLine,
 };
 
 // Agent-view overrides: same tag names, rendered for machine readers (the
@@ -44,4 +49,6 @@ export const agentMdxComponents = {
   InstrumentStack: InstrumentStackAscii,
   OpenTrace: OpenTraceAscii,
   PaperLink: PaperLinkText,
+  InstrumentLevels: InstrumentLevelsText,
+  SkillLine: SkillLineText,
 };

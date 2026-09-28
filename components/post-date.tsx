@@ -39,7 +39,7 @@ export function PostDate({
         dateTime={iso}
         className="flex w-16 flex-col items-center overflow-hidden rounded-xl border border-line bg-surface text-center shadow-paper"
       >
-        <span className="w-full bg-ink py-0.5 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-paper">
+        <span className="w-full bg-ink py-0.5 text-[0.65rem] font-bold text-paper">
           {p.month}
         </span>
         <span className="pt-1.5 font-serif text-2xl font-bold leading-none tabular-nums text-ink">
@@ -61,7 +61,7 @@ export function PostDate({
       <span className="flex items-center bg-ink px-3 font-serif text-base font-bold tabular-nums text-paper">
         {p.day}
       </span>
-      <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-ink-soft">
+      <span className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-ink-soft">
         {p.month}
         <span className="tabular-nums text-muted">{p.year}</span>
       </span>

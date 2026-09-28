@@ -5281,7 +5281,7 @@ export const openTracesCopy: Record<Locale, OpenTracesCopy> = {
       tail: ".",
       link: {
         label: "Trace your own kernels",
-        href: "/docs/humanize/intra-kernel-tracing/index/",
+        href: "/docs/humanize/xtrace/index/",
       },
     },
     collapse: "Collapse",
@@ -5320,7 +5320,7 @@ export const openTracesCopy: Record<Locale, OpenTracesCopy> = {
       tail: " 产生。",
       link: {
         label: "追踪你自己的 kernel",
-        href: "/docs/humanize/intra-kernel-tracing/index/",
+        href: "/docs/humanize/xtrace/index/",
       },
     },
     collapse: "收起",

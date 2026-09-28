@@ -1,20 +1,18 @@
 ---
 title: CUDA
-description: Trace the internal phase timeline of a hand-written CUDA C++ kernel by adding device-side scope markers.
+description: How to trace a CUDA C++ kernel with scope markers in its source.
 order: 11
 ---
 
 <div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_cuda" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_cuda</code></button></div>
 
-G-Watch can trace the internal phases of a raw **CUDA C++** kernel. You mark
-regions inside the kernel with device-side scope markers, run the kernel under
-G-Watch, and get back a per-thread timeline of when each phase ran — useful for
-spotting pipeline bubbles, synchronization overhead, and warp-role scheduling.
+Scope markers delimit regions of a **CUDA C++** kernel.
+G-Watch records when each region runs on every thread.
 
 ## Example
 
-A runnable example is available at
-[`examples/cuda/trace/trace_cuda_hgmma_matmul.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_cuda_hgmma_matmul.py).
+The runnable example is
+`examples/cuda/trace/trace_cuda_hgmma_matmul.py`.
 
 ```bash
 # for humanized visualization
@@ -50,10 +48,9 @@ __global__ void my_kernel(/* ... */) {
 }
 ```
 
-Markers are **device-side** — they must live inside the kernel body, and each
-region uses a unique integer id. A marker inside a loop emits one record per
-iteration, so the trace captures every pass of the k-loop, not just the final
-state.
+Markers go inside the kernel body.
+Each region needs a unique integer id.
+A marker inside a loop records every iteration, so the trace covers every pass of the k-loop.
 
 ## Step 2: Build and trace
 
@@ -80,7 +77,7 @@ mod = load_inline(
 result = do_trace(
     fn=lambda: mod.my_launcher(...),
     kernel_name_pattern=r".*my_kernel.*", # regex on the mangled prototype
-    dsl="",                               # raw CUDA C++ — no DSL PTX cache
+    dsl="",                               # raw CUDA C++, no DSL PTX cache
     scope_name_map={10: "load", 20: "compute", 30: "epilogue"},
     instrumentation_tier="ptx",
 )
@@ -88,14 +85,13 @@ result = do_trace(
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
-  trace machine instructions in a compiled cubin instead — no markers, no
-  rebuild — see
-  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
-- **Embed PTX.** Tracing recovers the kernel's PTX from the fatbin captured at
-  runtime, so the module must contain PTX — compile **both** the PTX
-  (`code=compute_90a`) and SASS (`code=sm_90a`) targets.
-- **`dsl=""`** tells G-Watch this is a hand-written kernel (no DSL dump to search).
+- **`instrumentation_tier="ptx"`** traces the scopes marked in source.
+  To trace a compiled cubin without markers, see
+  [SASS](/docs/humanize/xtrace/supported-dsls/sass/).
+- **Embed PTX.** Tracing reads the kernel's PTX from the fatbin at runtime.
+  So compile **both** the PTX target (`code=compute_90a`) and the SASS target
+  (`code=sm_90a`).
+- **`dsl=""`** marks a hand-written kernel, so there is no DSL dump to search.
 - **`scope_name_map`** turns the integer ids into the labels shown in the report.
 
 ## Step 3: Render the report

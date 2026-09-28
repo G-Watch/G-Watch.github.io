@@ -196,7 +196,7 @@ export function Fa3AgentCase() {
         role="group"
         aria-label="Sessions"
       >
-        <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted">
+        <span className="text-xs font-bold text-muted">
           Profile the agent reads
         </span>
         {CURVE_ORDER.map((arm) => {

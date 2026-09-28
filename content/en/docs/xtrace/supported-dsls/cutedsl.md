@@ -1,20 +1,18 @@
 ---
 title: CuTeDSL
-description: Trace the internal phase timeline of a CuTeDSL kernel by adding device-side scope markers.
+description: How to trace a CuTeDSL kernel with scope markers in its source.
 order: 13
 ---
 
 <div class="skill-line"><strong>Agent skill</strong> <button type="button" class="skill-chip" data-skill="/gwatch_cuda_xtrace_cutedsl" title="Copy to clipboard" onclick="navigator.clipboard.writeText(this.dataset.skill);this.classList.add('is-copied');setTimeout(()=&gt;this.classList.remove('is-copied'),1400)"><code>/gwatch_cuda_xtrace_cutedsl</code></button></div>
 
-G-Watch can trace the internal phases of a **CuTeDSL** kernel. You mark regions
-inside the `@cute.kernel` with device-side scope markers, run the kernel under
-G-Watch, and get back a per-thread timeline of when each phase ran — useful for
-spotting pipeline bubbles, synchronization overhead, and warp-role scheduling.
+Scope markers delimit regions of a **CuTeDSL** kernel.
+G-Watch records when each region runs on every thread.
 
 ## Example
 
-A runnable example is available at
-[`examples/cuda/trace/trace_cute_matmul.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_cute_matmul.py).
+The runnable example is
+`examples/cuda/trace/trace_cute_matmul.py`.
 
 ```bash
 pip install nvidia-cutlass-dsl
@@ -31,9 +29,9 @@ gwatch show trace.json
 
 ## Step 1: Mark scopes in the kernel
 
-Import the CuTe trace helper and wrap each region with `scope_start` / `scope_end`.
-Markers are **device-side** — they go inside the `@cute.kernel` body, and each
-region uses a unique integer id.
+Wrap each region with `scope_start` and `scope_end` from the CuTe trace helper.
+Markers go inside the `@cute.kernel` body.
+Each region needs a unique integer id.
 
 ```python
 import gwatch.cuda.xtrace.cute as gw_trace
@@ -53,12 +51,16 @@ def my_kernel(x: cute.Tensor, out: cute.Tensor, n: Int32):
 
 ## Step 2: Build and trace
 
-CuTe's JIT cubin bypasses CUPTI's module-load capture, so tracing falls back to
-CuTe's **dumped PTX**. Order matters: set `CUTE_DSL_KEEP_PTX=1` and
-`CUTE_DSL_DUMP_DIR` **before** importing `cutlass`, and import
-`gwatch.cuda.xtrace.cute` (which creates the capsule) and call
-`init_cupti_hooks()` **before** `cutlass` too — so CUPTI is listening by the time
-`@cute.jit` triggers the module load.
+CuTe's JIT cubin skips CUPTI's module capture.
+So tracing reads CuTe's **dumped PTX** instead.
+The order of these steps matters:
+
+1. Set `CUTE_DSL_KEEP_PTX=1` and `CUTE_DSL_DUMP_DIR`.
+2. Import `gwatch.cuda.xtrace.cute`, which creates the capsule.
+3. Call `init_cupti_hooks()`.
+4. Import `cutlass` last.
+
+This way CUPTI is already listening when `@cute.jit` loads the module.
 
 ```python
 import os
@@ -77,7 +79,7 @@ import cutlass                                       # import cutlass only now
 result = do_trace(
     fn=lambda: run_my_kernel(...),        # first execution of the kernel
     kernel_name_pattern=r".*my_kernel.*", # regex on the mangled prototype
-    dsl="cute",                           # CuTeDSL — trace uses CuTe's dumped PTX
+    dsl="cute",                           # CuTeDSL: trace uses CuTe's dumped PTX
     scope_name_map={1: "load"},           # optional: id -> label
     instrumentation_tier="ptx",
 )
@@ -85,13 +87,11 @@ result = do_trace(
 
 A few things to note:
 
-- **`instrumentation_tier="ptx"`** traces the scopes you marked in source. To
-  trace machine instructions in a compiled cubin instead — no markers, no
-  rebuild — see
-  [SASS](/docs/humanize/intra-kernel-tracing/supported-dsls/sass/).
-- **PTX dump.** Because CuTe's cubin bypasses CUPTI capture, the
-  `CUTE_DSL_KEEP_PTX` / `CUTE_DSL_DUMP_DIR` env vars and the import order above
-  are required so tracing can find the kernel's PTX.
+- **`instrumentation_tier="ptx"`** traces the scopes marked in source.
+  To trace a compiled cubin without markers, see
+  [SASS](/docs/humanize/xtrace/supported-dsls/sass/).
+- **PTX dump.** The env vars and the import order above let tracing find the
+  kernel's PTX.
 - **`dsl="cute"`** tells G-Watch to recover PTX from CuTe's dump directory.
 - **`scope_name_map`** (optional) turns the integer ids into the labels shown in
   the report.

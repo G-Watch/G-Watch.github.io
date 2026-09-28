@@ -29,7 +29,7 @@ export const news: Record<Locale, NewsItem[]> = {
       title: "We release Xtrace!",
       summary: "High-fidelity GPU kernel tracing for your code agent",
       links: [
-        { label: "Docs", href: "/docs/humanize/intra-kernel-tracing/index/", icon: "docs" },
+        { label: "Docs", href: "/docs/humanize/xtrace/index/", icon: "docs" },
         { label: "Blog", href: "/blog/humanize/releasing-xtrace/", icon: "blog" },
         { label: "Paper", href: "https://arxiv.org/abs/2609.28769", icon: "paper" },
       ],
@@ -46,7 +46,7 @@ export const news: Record<Locale, NewsItem[]> = {
       title: "Xtrace 发布！",
       summary: "为你的代码智能体提供高保真的 GPU kernel 追踪",
       links: [
-        { label: "文档", href: "/docs/humanize/intra-kernel-tracing/index/", icon: "docs" },
+        { label: "文档", href: "/docs/humanize/xtrace/index/", icon: "docs" },
         { label: "博客", href: "/blog/humanize/releasing-xtrace/", icon: "blog" },
         { label: "论文", href: "https://arxiv.org/abs/2609.28769", icon: "paper" },
       ],

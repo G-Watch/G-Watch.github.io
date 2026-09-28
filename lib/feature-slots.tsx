@@ -29,7 +29,7 @@ function XtraceViews() {
           playsInline
           className="h-full w-full object-cover object-center"
         />
-        <span className="absolute bottom-2 left-3 rounded bg-white/75 px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-ink">
+        <span className="absolute bottom-2 left-3 rounded bg-white/75 px-1.5 py-0.5 font-mono text-[11px] font-bold text-ink">
           Human View
         </span>
       </div>
@@ -45,7 +45,7 @@ function XtraceViews() {
           alt="Agent view"
           className="h-full w-full object-cover object-center"
         />
-        <span className="absolute bottom-2 right-3 rounded bg-white/75 px-1.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-ink">
+        <span className="absolute bottom-2 right-3 rounded bg-white/75 px-1.5 py-0.5 font-mono text-[11px] font-bold text-ink">
           Agent View
         </span>
       </div>

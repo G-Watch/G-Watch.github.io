@@ -1,6 +1,6 @@
 ---
 title: SASS
-description: Trace GPU kernel at binary-level SASS.
+description: How to trace a GPU kernel at the binary SASS level.
 order: 10
 ---
 
@@ -8,8 +8,8 @@ order: 10
 
 ## Example
 
-See
-[`examples/cuda/trace/trace_cuda_matmul_sass.py`](https://github.com/mars-compute-ai/G-Watch/blob/main/examples/cuda/trace/trace_cuda_matmul_sass.py).
+The runnable example is
+`examples/cuda/trace/trace_cuda_matmul_sass.py`.
 
 ```bash
 python3 examples/cuda/trace/trace_cuda_matmul_sass.py --source-line 29 --clock gpu
@@ -112,5 +112,5 @@ report.render("trace.json")     # the records and the analysis block
 
 - `scope_roles` groups the panel's rows by warp role.
 - `do_trace` calls `fn` more than once, so measure the last pass.
-- See [Visualize Xtrace for Agent](/docs/humanize/intra-kernel-tracing/visualize-xtrace-for-agent/)
+- See [Read Xtrace with Your Agent](/docs/humanize/xtrace/visualize-xtrace-for-agent/)
   for both report formats.

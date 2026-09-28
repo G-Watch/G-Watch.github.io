@@ -173,9 +173,8 @@ export const siteConfig: SiteConfig = {
   name: "G-Watch",
   brand: { mode: "name-only" },
   repo: "https://github.com/mars-compute-ai/G-Watch",
-  social: [
-    { label: "GitHub", href: "https://github.com/mars-compute-ai/G-Watch" },
-  ],
+  // No GitHub link in the header or footer.
+  social: [],
 
   projectName: "G-Watch",
   duration: "2024 – 2026",

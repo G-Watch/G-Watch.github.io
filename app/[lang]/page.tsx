@@ -138,9 +138,6 @@ export default async function HomePage({
                 overlapMedia ? "text-center lg:text-left" : "text-center"
               }`}
             >
-              <p className="font-mono text-xs uppercase tracking-[0.25em] text-accent">
-                {hero.eyebrow}
-              </p>
               {/* Each layout sets its own ramp. Beside a showcase the headline
                   only gets its share of the grid, so it is set a step down from
                   the full-width layout's and stays one line there. */}

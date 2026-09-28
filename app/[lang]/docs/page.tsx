@@ -60,10 +60,7 @@ export default async function DocsIndexPage({
 
           <div>
             <header className="border-b border-line pb-6">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-                {t.eyebrow}
-              </p>
-              <h1 className="mt-2 font-serif text-4xl font-bold text-ink">
+              <h1 className="font-serif text-4xl font-bold text-ink">
                 {t.title}
               </h1>
               <p className="mt-3 max-w-2xl leading-relaxed text-ink-soft">

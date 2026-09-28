@@ -65,7 +65,7 @@ export function TraceSmDispatch({
                   : "border-dashed border-line/60"
               }`}
             >
-              <div className="mb-1 text-[0.6rem] font-medium uppercase tracking-wide text-muted">
+              <div className="mb-1 text-[0.6rem] font-medium text-muted">
                 SM {cell.sm}
               </div>
               <div className="flex flex-wrap gap-1">

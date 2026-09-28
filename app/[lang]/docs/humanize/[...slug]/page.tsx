@@ -11,11 +11,7 @@ import { renderContent } from "@/lib/render-content";
 import { getDictionary } from "@/lib/dictionaries";
 import { resolveLocale, localePath, type Locale } from "@/lib/i18n";
 
-export function generateStaticParams({
-  params,
-}: {
-  params: { lang: string };
-}) {
+export function generateStaticParams({ params }: { params: { lang: string } }) {
   const lang = resolveLocale(params.lang);
   return getAllDocs(lang).map((doc) => ({ slug: doc.slug }));
 }
@@ -63,11 +59,6 @@ export default async function DocPage({
           <article className="min-w-0">
             <header className="mb-8 border-b border-line pb-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                {doc.group && (
-                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-                    {doc.group}
-                  </p>
-                )}
                 <ViewSwitch
                   lang={lang}
                   collection="docs"
@@ -86,7 +77,11 @@ export default async function DocPage({
               )}
             </header>
 
-            <Prose html={html}>{content}</Prose>
+            {/* Sections number themselves (1, 1.1, 1.1.1); see .docs-numbered
+                in app/theme.css. The table of contents numbers to match. */}
+            <div className="docs-numbered">
+              <Prose html={html}>{content}</Prose>
+            </div>
 
             <nav className="mt-14 grid gap-4 border-t border-line pt-8 sm:grid-cols-2">
               {prev ? (
@@ -118,7 +113,7 @@ export default async function DocPage({
 
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <TableOfContents items={toc} title={dict.toc.title} />
+              <TableOfContents items={toc} title={dict.toc.title} numbered />
             </div>
           </aside>
         </div>

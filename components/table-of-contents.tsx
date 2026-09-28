@@ -4,12 +4,33 @@ import { useEffect, useState } from "react";
 import type { TocItem } from "@/lib/markdown";
 
 /** Right-rail table of contents with scroll-spy highlighting. */
+/**
+ * Section numbers for h2/h3 entries: "1", "1.1", ... The same rule the
+ * .docs-numbered CSS counters apply to the headings, so the two agree.
+ */
+function sectionNumbers(items: TocItem[]): string[] {
+  let h2 = 0;
+  let h3 = 0;
+  return items.map((item) => {
+    if (item.depth === 2) {
+      h2 += 1;
+      h3 = 0;
+      return `${h2}`;
+    }
+    h3 += 1;
+    return `${h2}.${h3}`;
+  });
+}
+
 export function TableOfContents({
   items,
   title,
+  numbered = false,
 }: {
   items: TocItem[];
   title: string;
+  /** Prefix each entry with its section number. */
+  numbered?: boolean;
 }) {
   const [activeId, setActiveId] = useState<string>("");
 
@@ -35,14 +56,15 @@ export function TableOfContents({
   }, [items]);
 
   if (items.length === 0) return null;
+  const numbers = numbered ? sectionNumbers(items) : null;
 
   return (
     <nav className="text-sm">
-      <p className="mb-3 font-serif text-xs font-bold uppercase tracking-wider text-muted">
+      <p className="mb-3 font-serif text-xs font-boldr text-muted">
         {title}
       </p>
       <ul className="space-y-1.5">
-        {items.map((item) => (
+        {items.map((item, i) => (
           <li
             key={item.id}
             style={{ paddingLeft: item.depth === 3 ? "0.85rem" : 0 }}
@@ -55,6 +77,11 @@ export function TableOfContents({
                   : "text-muted hover:text-ink"
               }`}
             >
+              {numbers && (
+                <span className="mr-1.5 tabular-nums text-muted/70">
+                  {numbers[i]}
+                </span>
+              )}
               {item.text}
             </a>
           </li>

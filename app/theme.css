@@ -1,3 +1,5 @@
+@import "./zhuque-fangsong.css";
+
 /*
  * Theme tokens — USER-OWNED. Safe to customize; `npm run upgrade` never
  * overwrites this file. Change the palette and font mappings here.
@@ -26,9 +28,12 @@
      `highlight`) and the probes in the Xtrace post's figures. */
   --color-highlight: #c0392b;
 
-  --font-sans: var(--font-pt-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-pt-serif), ui-serif, Georgia, serif;
-  --font-mono: var(--font-pt-mono), ui-monospace, "SFMono-Regular", monospace;
+  /* PT has no CJK glyphs, so Chinese text falls through to FangSong (仿宋):
+     the self-hosted Zhuque Fangsong first (app/zhuque-fangsong.css), then a
+     system FangSong. Latin text stays PT. */
+  --font-sans: var(--font-pt-sans), "Zhuque Fangsong", "FangSong", "STFangsong", "仿宋", "FangSong_GB2312", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-pt-serif), "Zhuque Fangsong", "FangSong", "STFangsong", "仿宋", "FangSong_GB2312", ui-serif, Georgia, serif;
+  --font-mono: var(--font-pt-mono), "Zhuque Fangsong", "FangSong", "STFangsong", "仿宋", "FangSong_GB2312", ui-monospace, "SFMono-Regular", monospace;
 
   --shadow-paper: 0 1px 2px rgba(15, 17, 19, 0.04),
     0 8px 24px -12px rgba(15, 17, 19, 0.12);
@@ -321,7 +326,7 @@ body:has(#home-quickstart) footer {
 
 /*
  * Agent-skill strip on the Xtrace doc pages — USER-OWNED. A plain HTML button in
- * the Markdown (content/en/docs/intra-kernel-tracing/**) whose onclick copies
+ * the Markdown (content/en/docs/xtrace/**) whose onclick copies
  * its data-skill; the label after it says "copy", then "copied".
  */
 .skill-line {
@@ -370,4 +375,40 @@ body:has(#home-quickstart) footer {
 .skill-chip.is-copied::after {
   content: "copied";
   color: var(--color-ink);
+}
+
+/*
+ * Numbered doc sections — USER-OWNED. Headings inside a docs page's prose get
+ * 1 / 1.1 / 1.1.1 from CSS counters (wrapper in app/[lang]/docs/humanize/…);
+ * the table of contents computes the same numbers for its h2/h3 entries.
+ */
+.docs-numbered {
+  counter-reset: doc-h2;
+}
+.docs-numbered .prose h2 {
+  counter-increment: doc-h2;
+  counter-reset: doc-h3;
+}
+.docs-numbered .prose h3 {
+  counter-increment: doc-h3;
+  counter-reset: doc-h4;
+}
+.docs-numbered .prose h4 {
+  counter-increment: doc-h4;
+}
+.docs-numbered .prose h2::before,
+.docs-numbered .prose h3::before,
+.docs-numbered .prose h4::before {
+  margin-right: 0.55em;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+.docs-numbered .prose h2::before {
+  content: counter(doc-h2);
+}
+.docs-numbered .prose h3::before {
+  content: counter(doc-h2) "." counter(doc-h3);
+}
+.docs-numbered .prose h4::before {
+  content: counter(doc-h2) "." counter(doc-h3) "." counter(doc-h4);
 }

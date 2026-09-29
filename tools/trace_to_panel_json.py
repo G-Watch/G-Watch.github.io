@@ -23,6 +23,16 @@ import json
 import os
 
 
+def _sm_dispatch(value):
+    """The block -> SM map, given inline or as @<path>."""
+    if not value:
+        return {}
+    if value.startswith("@"):
+        with open(value[1:], encoding="utf8") as fh:
+            return json.load(fh)
+    return json.loads(value)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("report")
@@ -31,6 +41,8 @@ def main():
                     help="keep every Nth global thread id")
     ap.add_argument("--kernel", default=None, help="override the kernel name")
     ap.add_argument("--sm-dispatch", default=None,
+                    # a map of a large grid does not fit on a command line, so this
+                    # also takes @<path> to read the JSON from a file
                     help="JSON object mapping block ids to SM ids, shown in the "
                          "SM dispatching view")
     ap.add_argument("--roles", default=None,
@@ -188,7 +200,7 @@ def main():
         "lanes": lanes,
         "intervals": intervals,
         # block (CTA) id -> the SM it ran on, from the caller's own capture
-        "smDispatch": json.loads(args.sm_dispatch) if args.sm_dispatch else {},
+        "smDispatch": _sm_dispatch(args.sm_dispatch),
     }
 
     with open(args.out, "w", encoding="utf8") as fh:

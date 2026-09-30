@@ -6529,6 +6529,42 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.35",
     trace: "/traces/trtllm-cutlass-int8-weightonly-sm90a-m4096n4096k4096.json",
   },
+  {
+    vendor: "NVIDIA",
+    software: "TensorRT-LLM",
+    version: "1.2.1",
+    arch: "sm90a",
+    kernel: "deep_gemm::sm90_fp8_gemm_1d2d_impl fp8 block-scaled m=256",
+    params: { api: "tensorrt_llm.deep_gemm.fp8_gemm_nt", m: 256, n: 4096, k: 4096, precision: "fp8_e4m3", scaling: "block 1x128", output: "bf16", tile_m: 64, pipeline_stages: 8 },
+    call: [
+      "import tensorrt_llm.deep_gemm as dg",
+      "dg.fp8_gemm_nt(                 # m=256, n=k=4096, fp8_e4m3 -> bf16",
+      "    (a_fp8, a_scale),            # DeepGEMM tunes this m to a 64-wide",
+      "    (b_fp8, b_scale),            # tile and 8 pipeline stages",
+      "    out)",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.35",
+    trace: "/traces/trtllm-deepgemm-fp8-blockscaled-sm90a-m256n4096k4096.json",
+  },
+  {
+    vendor: "NVIDIA",
+    software: "TensorRT-LLM",
+    version: "1.2.1",
+    arch: "sm90a",
+    kernel: "deep_gemm::sm90_fp8_gemm_1d2d_impl fp8 block-scaled m=64",
+    params: { api: "tensorrt_llm.deep_gemm.fp8_gemm_nt", m: 64, n: 4096, k: 4096, precision: "fp8_e4m3", scaling: "block 1x128", output: "bf16", tile_m: 64, pipeline_stages: 18 },
+    call: [
+      "import tensorrt_llm.deep_gemm as dg",
+      "dg.fp8_gemm_nt(                 # m=64, n=k=4096, fp8_e4m3 -> bf16",
+      "    (a_fp8, a_scale),            # DeepGEMM tunes this m to a 64-wide",
+      "    (b_fp8, b_scale),            # tile and 18 pipeline stages",
+      "    out)",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.35",
+    trace: "/traces/trtllm-deepgemm-fp8-blockscaled-sm90a-m64n4096k4096.json",
+  },
 ];
 
 /**

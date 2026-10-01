@@ -935,12 +935,18 @@ export function OpenTracesBrowser({
   // reader arranged the browser rather than what they are looking at — so they
   // are kept instead, and a remount finds the tree, the filters and the search
   // exactly as they were left.
-  // The tree starts closed: a reader opens the one vendor they came for rather
-  // than scrolling past every branch of the catalog. A path named in the query
-  // string still shows, because a node on the selection opens regardless.
+  // The tree starts with only its vendors open: their libraries show, and a
+  // reader opens the one they came for rather than scrolling past every
+  // version of the catalog. A path named in the query string still shows,
+  // because a node on the selection opens regardless.
   const [expanded, setExpanded] = useKeptState<Set<string>>(
     "open-traces:expanded",
-    () => new Set<string>(),
+    () =>
+      new Set(
+        buildTraceTree(catalog, NAV_LEVELS.length).map((vendor) =>
+          pathKey(vendor.path),
+        ),
+      ),
   );
   const [kernelQuery, setKernelQuery] = useKeptState("open-traces:search", "");
   const [pickedKernel, setPickedKernel] = useState<string | null>(() =>

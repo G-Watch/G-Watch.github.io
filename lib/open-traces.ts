@@ -6565,6 +6565,24 @@ const TRACE_RECORDS: TraceRecord[] = [
     gwatchVersion: "0.0.35",
     trace: "/traces/trtllm-deepgemm-fp8-blockscaled-sm90a-m64n4096k4096.json",
   },
+  {
+    vendor: "NVIDIA",
+    software: "TensorRT-LLM",
+    version: "1.2.1",
+    arch: "sm90a",
+    kernel: "mmha::masked_multihead_attention_kernel bf16 hdim128 paged decode",
+    params: { api: "TrtllmAttention.forward (generation)", batch: 8, kv_len: 1024, heads: 32, kv_heads: 32, head_dim: 128, tokens_per_block: 64, precision: "bf16", kv_cache: "KVBlockArray" },
+    call: [
+      "attn = TrtllmAttention(          # batch=8, kv_len=1024, H=32, D=128",
+      "    layer_idx=0, num_heads=32,",
+      "    head_dim=128, num_kv_heads=32)",
+      "attn.forward(qkv, None, None,    # one fused QKV tensor, not three",
+      "             attn_metadata)      # paged KV cache, one token per sequence",
+    ].join("\n"),
+    meta: { GPU: "NVIDIA H100 80GB HBM3" },
+    gwatchVersion: "0.0.35",
+    trace: "/traces/trtllm-mmha-decode-paged-sm90a-b8kv1024h32d128.json",
+  },
 ];
 
 /**

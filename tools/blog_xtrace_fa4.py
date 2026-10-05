@@ -3,12 +3,16 @@
 The raw traces (exp-data/b300, on the external drive) were not reachable, so
 this reads the figure itself: every per-SM phase bar is a vector rectangle in
 axis coordinates, and the whole-kernel placement map is an embedded bitmap.
+
+Usage: python3 blog_xtrace_fa4.py CASE_FA4_PDF   (or set XTRACE_FA4_PDF)
 """
 import json
+import os
+import sys
 import pymupdf as fitz
 import numpy as np
 
-PDF = "/Users/zobin/Desktop/papers/feynman_sass_instrumentation/workdir/sass-iket/figs/case_fa4/case_fa4.pdf"
+PDF = sys.argv[1] if len(sys.argv) > 1 else os.environ["XTRACE_FA4_PDF"]
 pg = fitz.open(PDF)[0]
 dr = pg.get_drawings()
 hx = lambda c: '#%02x%02x%02x' % tuple(round(v * 255) for v in c) if c else None

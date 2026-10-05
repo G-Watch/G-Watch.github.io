@@ -1,7 +1,11 @@
-"""Export the exact data behind fig:agent-case (FA-3) for the web chart."""
+"""Export the exact data behind fig:agent-case (FA-3) for the web chart.
+
+Usage: python3 blog_xtrace_fa3.py FIGS_DIR   (or set XTRACE_FIGS_DIR)
+FIGS_DIR is the paper's figure directory holding agent_case/plot.py.
+"""
 import importlib.util, json, os, sys
 import numpy as np
-FIGS = "/Users/zobin/Desktop/papers/feynman_sass_instrumentation/workdir/sass-iket/figs"
+FIGS = sys.argv[1] if len(sys.argv) > 1 else os.environ["XTRACE_FIGS_DIR"]
 sys.path.insert(0, FIGS)
 spec = importlib.util.spec_from_file_location("ac", os.path.join(FIGS, "agent_case", "plot.py"))
 A = importlib.util.module_from_spec(spec); spec.loader.exec_module(A)

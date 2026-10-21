@@ -21,6 +21,7 @@ import type { Locale } from "@/lib/i18n";
  * to, and feeds the GitHub Release asset URLs below).
  */
 const GWATCH_VERSIONS = [
+  "0.0.36",
   "0.0.35",
   "0.0.34",
   "0.0.33",

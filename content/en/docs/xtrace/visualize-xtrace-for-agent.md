@@ -161,7 +161,5 @@ A good agent asks instead of guessing:
 
 The G-Watch agent skills teach an agent to ask this way.
 They also teach it to read the token through `gwatch show`.
-
-```bash
-npx skills add mars-compute-ai/G-Watch -g
-```
+The skills ship with G-Watch, which is available on request.
+To try it, write to [zobin1999@gmail.com](mailto:zobin1999@gmail.com).

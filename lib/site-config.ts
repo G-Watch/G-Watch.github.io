@@ -84,7 +84,15 @@ export type AgentStep =
 
 export interface Quickstart {
   title: string;
-  install: { label: string; commands: string[] };
+  install: {
+    label: string;
+    commands: string[];
+    /**
+     * Shown in the terminal instead of `commands` while G-Watch is handed out
+     * on request: a sentence, then the address as a mailto link.
+     */
+    note?: { text: string; email: string };
+  };
   agent: {
     label: string;
     /** Working directory shown in the session header. */
@@ -190,7 +198,9 @@ export const siteConfig: SiteConfig = {
         headline: "Boosting RSI for AI Infra",
         subhead:
           "G-Watch is an advanced analysis framework for GPU execution. It integrates a comprehensive toolset featuring Xtrace, binary analysis, microbenchmarking, and more. It equips AI agents with precise data for autonomous optimization on NVIDIA and AMD hardwares.",
-        actions: "install",
+        // The install buttons (`install`) are hidden while G-Watch is handed
+        // out on request; put the key back to show them again.
+        actions: "contact",
         media: {
           type: "custom",
           slot: "news",
@@ -202,11 +212,16 @@ export const siteConfig: SiteConfig = {
       quickstart: {
         title: "Quick start",
         install: {
-          label: "Install",
-          commands: [
-            "pip3 install gwatch",
-            "npx skills add mars-compute-ai/G-Watch -g",
-          ],
+          label: "Get access",
+          // The install commands are hidden while G-Watch is handed out on
+          // request; restore them and drop `note` to show them again:
+          //   "pip3 install gwatch",
+          //   "npx skills add mars-compute-ai/G-Watch -g",
+          commands: [],
+          note: {
+            text: "G-Watch is available on request. To try it, write to",
+            email: "zobin1999@gmail.com",
+          },
         },
         agent: {
           label: "Ask your agent",
@@ -281,7 +296,8 @@ export const siteConfig: SiteConfig = {
         headline: "为 AI Infra 加速 RSI",
         subhead:
           "G-Watch 是一款面向 GPU 运行分析的框架。它集成了包含 Xtrace、GPU 二进制分析、微基准测试在内的多项技术，旨在为 AI Agent 提供精确数据，助力其在 NVIDIA 和 AMD 硬件上实现全自动优化。",
-        actions: "installZh",
+        // Hidden with the English one above.
+        actions: "contactZh",
         media: {
           type: "custom",
           slot: "newsZh",
@@ -293,11 +309,15 @@ export const siteConfig: SiteConfig = {
       quickstart: {
         title: "快速开始",
         install: {
-          label: "安装",
-          commands: [
-            "pip3 install gwatch",
-            "npx skills add mars-compute-ai/G-Watch -g",
-          ],
+          label: "获取试用",
+          // Hidden with the English one above.
+          //   "pip3 install gwatch",
+          //   "npx skills add mars-compute-ai/G-Watch -g",
+          commands: [],
+          note: {
+            text: "G-Watch 目前通过申请提供试用，如需试用请联系",
+            email: "zobin1999@gmail.com",
+          },
         },
         agent: {
           label: "交给智能体",

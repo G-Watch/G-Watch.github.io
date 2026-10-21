@@ -12,7 +12,10 @@
 //
 // Interactive components go in their own file with a "use client" directive.
 // Seeded by `npm run upgrade` when missing; never overwritten once it exists.
-import { InstallWizard } from "@/components/install-wizard";
+// The install wizard is unregistered while G-Watch is handed out on request,
+// so its install commands stay out of the bundles; put both lines back to
+// show it again.
+// import { InstallWizard } from "@/components/install-wizard";
 import {
   Fa3AgentCase,
   Fa4CudnnCase,
@@ -31,7 +34,7 @@ import { InstrumentLevelsText } from "@/lib/docs/instrument-levels-text";
 import { SkillLine, SkillLineText } from "@/lib/docs/skill-line";
 
 export const mdxComponents = {
-  InstallWizard,
+  // InstallWizard,
   Fa3AgentCase,
   Fa4CudnnCase,
   InstrumentStack,

@@ -80,6 +80,28 @@ function CopyLine({ command }: { command: string }) {
   );
 }
 
+/** One comment line in the install terminal: a sentence and a mailto link. */
+function NoteLine({
+  note,
+}: {
+  note: NonNullable<Quickstart["install"]["note"]>;
+}) {
+  return (
+    <div className="flex gap-3 py-1">
+      <span className="select-none text-white/35">#</span>
+      <span className="whitespace-pre-wrap">
+        {note.text}{" "}
+        <a
+          href={`mailto:${note.email}`}
+          className="underline decoration-white/40 underline-offset-4 hover:text-white"
+        >
+          {note.email}
+        </a>
+      </span>
+    </div>
+  );
+}
+
 /** How many reveal ticks a step takes: its head line, then each output line. */
 function stepLines(step: AgentStep): number {
   return 1 + (step.kind === "tool" ? (step.out?.length ?? 0) : 0);
@@ -324,9 +346,13 @@ export function QuickstartTerminals({ quickstart }: { quickstart: Quickstart }) 
     <ol className="flex min-h-0 flex-1 flex-col">
       <Step n={1} label={install.label}>
         <Window title="bash" bodyClassName="overflow-x-auto">
-          {install.commands.map((command) => (
-            <CopyLine key={command} command={command} />
-          ))}
+          {install.note ? (
+            <NoteLine note={install.note} />
+          ) : (
+            install.commands.map((command) => (
+              <CopyLine key={command} command={command} />
+            ))
+          )}
         </Window>
       </Step>
       <Step n={2} label={agent.label} last grow>
